@@ -1,0 +1,298 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(CodeClanData)
+```
+
+```{r}
+all_deaths
+```
+
+```{r}
+# number of rows
+nrow(all_deaths)
+```
+
+```{r}
+# number of columns
+ncol(all_deaths)
+```
+```{r}
+# output both rows and columns
+dim(all_deaths)
+```
+
+```{r}
+# output column names
+names(all_deaths)
+```
+
+```{r}
+# show n number of rows of data from top of dataset
+head(all_deaths, n = 6)
+```
+
+```{r}
+# show n number of rows of data from bottom of dataset
+tail(all_deaths, n = 5)
+```
+```{r}
+# summary of dataset, i.e. rows, cols, col names, data types.
+glimpse(all_deaths)
+```
+
+```{r}
+# summary statistics of dataset
+summary(all_deaths)
+```
+
+```{r}
+# tabular view of entire dataset
+view(all_deaths)
+```
+
+```{r}
+# store dataset in global environment by saving to an object "test"
+test <- all_deaths
+```
+
+```{r}
+# select specific columns from dataset
+select(all_deaths, name, allegiances, gender, nobility, year_of_death)
+```
+
+```{r}
+# exclude a column by putting a "-" before the column name to be excluded.
+deaths_no_name <- select(all_deaths, -name)
+```
+
+```{r}
+# select all columns which relate to a book
+columns_relating_to_book <- select(all_deaths, contains("book"))
+columns_relating_to_book
+```
+
+```{r}
+# select all columns which relate to a death
+columns_relating_to_death <- select(all_deaths, contains("death"))
+columns_relating_to_death
+```
+
+```{r}
+# alternative example solutions for selecting multiple columns
+select(all_deaths, 1,2,3,4)
+select(all_deaths, 1:4)
+select(all_deaths, name:book_of_death)
+# example exclusion of columns
+select(all_deaths, -c(name:book_of_death))
+select(all_deaths, -name:-book_of_death)
+select(all_deaths, -name:-book_of_death)
+```
+
+```{r}
+# multiple functions being used to select columns
+select(all_deaths, contains("book"), contains("death"))
+```
+
+```{r}
+# filter rows based on a single criteria
+filter(all_deaths, allegiances == "Lannister")
+
+```
+```{r}
+# filter on multiple criteria
+filter(all_deaths, allegiances %in% c("Lannister", "House Lannister"))
+```
+
+```{r}
+# filter based on numerical data
+filter(all_deaths, year_of_death >= 299)
+```
+```{r}
+filter(all_deaths, allegiances == "None")
+```
+
+& = and
+| = or
+
+```{r}
+# multiple logical criteria for filtering - using &
+filter(all_deaths, allegiances == "Lannister" & nobility == 1)
+```
+
+```{r}
+# using or "|" logical operator
+filter(all_deaths, allegiances == "Lannister" | allegiances == "House Stark")
+#alternatice without usin "|"
+filter(all_deaths, allegiances %in% c("Lannister", "House Stark"))
+
+```
+
+```{r}
+# other use of "or" operator
+filter(all_deaths, allegiances == "Lannister" | nobility ==1)
+```
+
+```{r}
+# filter criteria using range
+filter(all_deaths, book_intro_chapter >= 5 & book_intro_chapter <= 10)
+```
+
+```{r}
+# filter on range using "between()" function
+filter(all_deaths, between(book_intro_chapter, 5, 10))
+```
+
+```{r}
+# using str_detect for "filter" functions - note "contains()" can only be used for select() functions
+filter(all_deaths, str_detect(allegiances,"Stark"))
+
+```
+
+
+
+
+
+```{r}
+# Find where the year_of_death is less than or equal to 299.
+filter(all_deaths, year_of_death <= 299)
+
+# Find the females (gender is 0) who are not Lannisters
+filter(all_deaths, gender == 0 & allegiances != "Lannister")
+
+#Find just the data for the characters “Jon Snow”, “Daenerys Targaryen” and “Samwell Tarly”.
+filter(all_deaths, name %in% c("Jon Snow","Daenerys Targaryen","Samwell Tarly"))
+```
+
+```{r}
+# arrange rows in ascending order
+arrange(all_deaths, book_intro_chapter)
+```
+
+```{r}
+# arrange rows in descending order
+arrange(all_deaths, desc(book_intro_chapter))
+```
+
+```{r}
+# arrange by multiple columns - SORTING
+arrange(all_deaths, book_of_death, death_chapter)
+```
+
+
+```{r}
+#Arrange all_deaths by allegiances. What happens when you arrange by a character column?
+arrange(all_deaths, allegiances)
+
+#Arrange all_deaths by allegiances and book_intro_chapter
+arrange(all_deaths, allegiances, book_intro_chapter)
+
+#Arrange all_deaths by descending year_of_death
+arrange(all_deaths, desc(year_of_death))
+
+```
+
+```{r}
+# mutate function
+mutate(all_deaths, years_survived = year_of_death - 298, .after = year_of_death)
+```
+
+```{r}
+# add a calculated column
+mutate(all_deaths,
+       test = book_of_death * 5)
+```
+
+```{r}
+# change column from value to logical
+mutate(all_deaths,
+       year_of_death = is.na(year_of_death))
+```
+
+```{r}
+# change column to logical
+mutate(all_deaths,
+        nobility = as.logical(nobility))
+```
+
+```{r}
+# not all data types can be converted
+mutate(all_deaths,
+       name = as.numeric(name))
+```
+
+```{r}
+# calculate average using mutate()
+mutate(all_deaths,
+       avg_death = mean(year_of_death, na.rm = TRUE))
+```
+```{r}
+# creating summary table
+summarise(all_deaths,
+          avg_death = mean(year_of_death, na.rm = T),
+          sum_males = sum(gender))
+```
+
+```{r}
+# grouping data
+deaths_grouped <- group_by(all_deaths, allegiances)
+```
+
+```{r}
+# summary of groups
+summarise(deaths_grouped,
+          character_count = n())
+```
+
+```{r}
+# grouping by multiple factors
+deaths_grouped <- group_by(all_deaths, nobility, gender)
+```
+
+```{r}
+# summarising characters based on nobility and gender
+summarise(deaths_grouped,
+          character_count = n())
+```
+
+```{r}
+# normal method for arranging, grouping, summarising data
+have_died <- filter(all_deaths, !is.na(book_of_death)) 
+
+died_grouped <- group_by(have_died, allegiances)
+died_counts <- summarise(died_grouped, count = n())
+
+arrange(died_counts, desc(count))
+
+
+```
+
+```{r}
+# pipe operator - ctrl + shift + m
+#data argument not required in each function, functions take data from previous line.
+all_deaths %>% 
+  filter(!is.na(book_of_death)) %>% 
+  group_by(allegiances) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+
+```
+```{r}
+# pulling values from summary statistics from datasets
+average_year_of_death <- all_deaths %>% 
+  summarise(average_value = mean(year_of_death, na.rm = T)) %>%   pull()
+
+average_year_of_death
+```
+
+```{r}
+all_deaths
+count <- summarise(all_deaths, count = n())
+pull(count) -> count2
+count2
+```
+

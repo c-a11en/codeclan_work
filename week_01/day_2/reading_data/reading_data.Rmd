@@ -1,0 +1,83 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+Create code chunk:        Ctrl + Alt + i
+Run whole code chunk:     Ctrl + Shift + Enter
+Run line of code:         Ctrl + Enter      
+
+```{r}
+library(tidyverse)
+
+```
+
+
+```{r}
+# read data from CSV files
+dog_bites <- read_csv("data/dog_bites.csv")
+
+```
+
+```{r}
+dog_bites
+```
+
+```{r}
+# import library for reading Excel data files
+library(readxl)
+```
+
+```{r}
+# read data from excel workbook
+seed_mix <- read_excel("data/edinburgh_seedmix.xlsx")
+```
+```{r}
+seed_mix
+```
+
+```{r}
+# select specific sheet from Excel spreadsheet
+seed_mix_north <- read_excel("data/edinburgh_seedmix.xlsx",
+                             sheet = "North Neighbourhood")
+```
+
+```{r}
+seed_mix_north
+```
+
+```{r}
+# Show Sheet names in given Excel workbook
+excel_sheets("data/edinburgh_seedmix.xlsx")
+```
+
+```{r}
+# Reading South Neighbourhood data by sheet position
+seed_mix_south_bypos <- read_excel("data/edinburgh_seedmix.xlsx",
+                                 sheet = 4)
+
+# Reading South Neighbourhood data by sheet name
+seed_mix_south_bysn <- read_excel("data/edinburgh_seedmix.xlsx",
+                                 sheet = "South Neighbourhood")
+
+```
+
+```{r}
+seed_mix_south_bypos
+seed_mix_south_bysn
+```
+
+```{r}
+library(CodeClanData)
+```
+
+```{r}
+students
+```
+
+```{r}
+write_csv(students, "data/students2.csv")
+```
+

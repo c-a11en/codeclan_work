@@ -1,0 +1,42 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+View(state_income_data)
+glimpse(state_income_data)
+```
+```{r}
+processed_data <- state_income_data %>% 
+  select(Index:Y2008) %>% 
+  rename(first_letter = Index) %>% 
+  filter(first_letter %in% c("A", "B", "C")) %>% 
+  arrange(desc(Y2008)) %>% 
+  mutate(income_change = Y2008 - Y2002)
+
+```
+
+```{r}
+processed_data %>% 
+  filter(income_change >= 500000 | income_change <= -500000)
+
+```
+```{r}
+
+
+processed_data %>% 
+  summarise(avg_change = mean(income_change, na.rm = T), median_change = median(income_change))
+
+
+```
+
+```{r}
+state_income_data %>% 
+  select(State, Y2008) %>% 
+  arrange(desc(Y2008)) %>% 
+  filter(Y2008 > 1000000) %>%
+  slice(1:10)
+  
+```
+
