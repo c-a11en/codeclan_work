@@ -1,0 +1,91 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+# watch for spelling mistakes
+the_name_of_my_variable <- c(3,4,5)
+
+the_name_of_my_varaible == 4
+
+```
+```{r}
+
+# watch for spelling mistakes - SOLUTION
+the_name_of_my_variable <- c(3,4,5)
+
+the_name_of_my_variable == 4
+
+```
+```{r}
+a = 5
+b= 6
+```
+
+```{r}
+a = a + b
+a
+```
+```{r}
+library(dplyr)
+library(MASS)
+
+```
+```{r}
+# calling functions from specified library
+mtcars %>% 
+  dplyr::select(mpg)
+
+```
+
+```{r}
+# use to identify conflicts in functions
+conflicts()
+```
+
+```{r}
+
+install.packages("zoo")
+library(zoo)
+
+```
+
+```{r}
+mtcars %>% 
+  dplyr::select(mpg, hp) %>% 
+  filter(mpg < 50) %>% 
+  summarise(mean = mean(hp))
+
+```
+
+```{r}
+library(errorist)
+
+# open up webpage with help for errors
+errorist::enable_errorist()
+
+```
+
+```{r}
+# $ sign used to pull column from dataset as vector
+mean(mtcars$mpg)
+
+```
+```{r}
+library(janitor)
+
+identical(mtcars$car, mtcars$car)
+
+```
+
+```{r}
+mtcars %>% 
+  mutate(new_col = if_else(cyl == 8, 0,mpg),
+         .after = mpg) %>% 
+  filter(mpg != new_col)
+
+
+```
+

@@ -1,0 +1,113 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+
+```{r}
+#ERROR 1
+
+some_letters <- c("E", "R", "R", "O", "R")
+
+```
+
+```{r}
+# ERROR 2
+
+message <- c("does", "this", "work", "?")
+
+toupper(message)
+
+```
+
+```{r}
+# ERROR 3
+
+mtcars %>% 
+  select(mpg, cyl, disp) %>%
+  filter(mpg < 20)
+
+```
+```{r}
+# ERROR 4
+
+iris %>% 
+  select(Sepal.Length, Sepal.Width, Species) %>% 
+  arrange(Sepal.Length)
+
+```
+
+```{r}
+# ERROR 5
+
+ToothGrowth %>%
+  filter(supp == "VC") %>% 
+  summarise(avg_len_vc = mean(len))
+
+```
+
+```{r}
+# ERROR 6
+
+animals <- c("cat", "dog", "rabbit", "horse")
+sample(animals, 10, replace = TRUE)
+
+```
+
+```{r}
+# ERROR 7
+
+dog_names <- c("Lucy", "Molly", "Charlie", "Luna", "Bella", "Cooper")
+
+cat_names <- c("Luna", "Lily", "Lucy", "Charlie", "Max", "Oliver")
+
+intersect(dog_names, cat_names)
+
+```
+
+```{r}
+# ERROR 8
+
+chickwts %>% 
+  filter(weight <= 150) %>% 
+  mutate(weight_kg = weight * 0.001)
+
+```
+
+```{r}
+# ERROR 9
+
+tibble(alphabet = LETTERS,
+       numbers = 1:26) %>% 
+  filter(alphabet != c("A", "B", "C"))
+
+```
+
+```{r}
+# ERROR 10
+# # Don't change anything in this code chunk
+# # but you will need to include it in your notebooks
+
+set.seed(999)
+
+scent_ratings <- tibble(
+  iD = rep(1:10, each = 5),
+  SCENT = rep(c("New book", "Cut grass", "Rose oil", "Fresh linen", "Wet dog"), 10),
+  rating = sample(c(0:5, NA), 50, replace = TRUE),
+  PersonAge = rep(NA, 50)
+)
+
+scent_ratings <- scent_ratings %>%
+  janitor::clean_names()
+
+scent_ratings %>% 
+  drop_na(rating) %>% 
+  group_by(scent) %>% 
+  summarise(mean_rating = mean(rating))
+
+```

@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Question 1
+
+```{r}
+library(tidyverse)
+
+wine_ratings <- read_csv("data/wine_ratings.csv")
+
+```
+
+## Question 2
+
+```{r}
+# Create subset of data set and remove all rows with NA values in them
+wine_subset <- wine_ratings %>% 
+  select(title, taster_name, points, price, country) %>% 
+  drop_na()
+```
+## Question 3
+
+```{r}
+
+# Finding the 5 countries with the highest mean points
+wine_subset %>% 
+  group_by(country) %>% 
+  summarise(mean_points = mean(points)) %>% 
+  slice_max(mean_points, n = 5)
+
+```
+
+## Question 4
+
+```{r}
+
+# Finding the 5 countries with the lowest mean prices
+wine_subset %>% 
+  group_by(country) %>% 
+  summarise(mean_price = mean(price)) %>% 
+  slice_min(mean_price, n = 5)
+
+```
+
+## Question 5
+
+```{r}
+
+# Finding the 5 countries with the highest median points
+wine_subset %>% 
+  group_by(country) %>% 
+  summarise(median_points = median(points)) %>% 
+  slice_max(median_points, n = 5, with_ties = FALSE)
+
+```
+
+```{r}
+
+# Finding the 5 countries with the lowest median prices
+wine_subset %>% 
+  group_by(country) %>% 
+  summarise(median_price = median(price)) %>% 
+  slice_min(median_price, n = 5, with_ties = FALSE)
+
+```
+
+## Question 6
+
+```{r}
+
+#Sample 5 taster names from entire dataset
+taster_sample <- wine_subset %>% 
+  distinct(taster_name) %>%
+  sample_n(5) %>% 
+  pull()
+
+```
+
+## Question 7
+
+```{r}
+
+#Sample 10 country names from entire dataset using sample_frac()
+country_sample <- wine_subset %>% 
+  distinct(country) %>%
+  sample_frac(10 / n()) %>% 
+  pull()
+
+```
+## Question 8
+
+```{r}
+
+# Filter dataset based on taster_sample and country_sample
+wine_sample <- wine_subset %>% 
+  filter(taster_name %in% taster_sample,
+         country %in% country_sample) %>% 
+  arrange(taster_name, country)
+
+```
+
+## Question 9
+
+```{r}
+
+wine_sample %>% 
+  group_by(taster_name) %>% 
+  summarise(mean_points = mean(points))
+
+
+wine_sample %>% 
+  group_by(taster_name) %>% 
+  mutate(difference_from_avg = points - mean(points),
+         .after = points) %>% 
+  arrange(desc(difference_from_avg))
+
+```
+
