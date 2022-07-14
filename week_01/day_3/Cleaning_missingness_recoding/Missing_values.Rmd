@@ -1,0 +1,378 @@
+---
+title: "Session 2 - Missing values"
+output: html_notebook
+---
+
+```{r}
+library(CodeClanData)
+library(janitor)
+comms_data
+```
+
+# Drop all NA's - deletes ALL rows with NA's - lost a lot of data
+```{r}
+comms_data
+
+comms_data %>%
+  drop.na()
+```
+
+# Imputation - replace NAs with somthing sensible
+maybe the mean, median, range etc
+```{r}
+comms_data %>%
+  pull(monthly_charges) %>% 
+  mean(na.rm = T)
+
+comms_data %>%
+  pull(monthly_charges) %>% 
+  median(na.rm = T)
+
+min_charge <- comms_data %>%
+  pull(monthly_charges) %>% 
+  min(na.rm = T)
+
+max_charge <- comms_data %>%
+  pull(monthly_charges) %>% 
+  max(na.rm = T)
+
+min_charge
+max_charge
+
+max_charge - min_charge
+
+summary(comms_data)
+
+```
+
+# Leave them alone?
+
+'is.na()'
+
+```{r}
+is.na(1)
+is.na("1")
+is.na(NA)
+is.na(NULL)
+is.na(NaN)
+is.na('unknown')
+
+```
+
+```{r}
+comms_data
+
+```
+
+## Standard missing values
+'NA'
+
+```{r}
+comms_data
+comms_data %>% 
+  filter(is.na(monthly_charges))
+
+comms_data %>%
+  pull(monthly_charges)%>%
+  is.na() %>% 
+  mean()
+
+
+comms_data %>% 
+  summarise(count = sum(is.na(monthly_charges)),
+            mean=mean(is.na(monthly_charges)))
+
+```
+
+```{r}
+comms_data %>% 
+  drop_na()
+```
+
+## Imputation
+
+'coalesce(thing to fix, thing to fix with)'
+
+```{r}
+comms_data_imputed_median <- comms_data %>% 
+  mutate(monthly_charges)
+
+
+comms_data %>% 
+  select(monthly_charges) %>% 
+  mutate(monthly_charges2 = coalesce(monthly_charges,
+                                     median(monthly_charges, na.rm = T)))
+
+summary(comms_data)
+```
+
+```{r}
+comms_data <- clean_names(comms_data)
+names(comms_data)
+
+comms_data_imputed_values <- comms_data %>% 
+  mutate(monthly_charges2 = coalesce(monthly_charges,
+                                     median(monthly_charges, na.rm = TRUE)),
+         monthly_charges3 = coalesce(monthly_charges,
+                                     mean(monthly_charges, na.rm = TRUE)),
+         .after = monthly_charges)
+
+names(comms_data_imputed_values)
+
+```
+
+```{r}
+
+ggplot(comms_data_imputed_values, aes(customer_id, monthly_charges2)) +
+  geom_point()
+
+ggplot(comms_data_imputed_values, aes(customer_id, monthly_charges3)) +
+  geom_point()
+```
+
+# Non-standard missing values
+
+```{r}
+comms_data %>% 
+  select(payment_method) %>% 
+  group_by(payment_method) %>%
+  summarise(num_pmt = n()) %>% 
+  arrange(desc(num_pmt))
+
+comms_data %>% 
+  select(payment_method) %>% 
+  group_by(payment_method) %>%
+  summarise(num_pmt = n()) %>% 
+  arrange(num_pmt)
+
+
+num_na <- comms_data %>%
+  summarise(pmt_na = sum(is.na(payment_method)),
+            tc_na = sum(is.na(total_charges)))
+
+num_na
+  
+```
+
+'na_if()' <-> 'coalesce'
+
+```{r}
+
+comms_data %>% 
+  filter(is.na(total_charges))
+
+comms_data
+
+comms_data_imputed_values %>% 
+  select(total_charges) %>%  # can delete safely
+  mutate(total_charges_explicit_na = na_if(total_charges,"na"),
+         total_charges_explicit_na2 = na_if(total_charges_explicit_na,"N/A"))
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(janitor)
+
+
+comms_data_cleaned <- comms_data %>%
+  mutate(total_charges = na_if(total_charges, "na"),
+         total_charges = na_if(total_charges, "N/A"),
+         payment_method = na_if(payment_method,"--"),
+         payment_method = coalesce(payment_method,"Unknown"))
+
+comms_data_cleaned
+
+```
+
+# Recoding
+
+```{r}
+students_big %>% 
+  select(ageyears) %>% 
+  mutate(older_than_12 = ageyears > 12)
+
+students_big %>% 
+  select(ageyears) %>% 
+  mutate(older_than_12 = if_else(ageyears >12,
+                                 "Older than 12", "12 or younger"))
+```
+
+```{r}
+students_big %>% 
+  select(gender) %>% 
+  mutate(gender_recoded = if_else(gender == "M","Male","Female"))
+```
+
+```{r}
+
+students_big %>% 
+  select(handed) %>% 
+  mutate(handed_recoded = if_else(handed == "R", "Right", "Left"))
+
+students_big %>% 
+  select(favourite_physical_activity) %>% 
+  mutate(fpa_recoded = if_else(favourite_physical_activity == "Football/Soccer",
+                               "Football",favourite_physical_activity))
+
+```
+
+```{r}
+students_big %>% 
+  select(handed, favourite_physical_activity) %>% 
+  mutate(handed = if_else(handed == "R", "Right", "Left"),
+         favourite_physical_activity = 
+           if_else(favourite_physical_activity == "Football/Soccer",
+                               "Football",favourite_physical_activity))
+
+```
+
+## `recode()`
+
+```{r}
+
+students_big %>% 
+  select(travel_to_school) %>% 
+  mutate(travel_to_school_recoded = recode(travel_to_school,
+                                           'Bus' = 'bus',
+                                           'Car' = 'car',
+                                           'Walk' = 'walk'))
+
+students_big  %>% 
+  count(travel_to_school)
+
+students_big %>% 
+  select(travel_to_school) %>% 
+  mutate(travel_to_school_recoded = recode(travel_to_school,
+                                           'Bus' = 'bus',
+                                           'Car' = 'car',
+                                           'Walk' = 'walk',
+                                           .default = 'other'))
+
+```
+
+```{r}
+students_big %>% 
+  select(ageyears) %>% 
+  mutate(ageyears_recoded = recode(ageyears, "12" = 120, .default = 0))
+```
+
+```{r}
+
+data <- read.table(header = TRUE, text="
+ subject sex control cond1 cond2 compl
+       1   M     7.9  12.3  10.7  T
+       2   F     6.3  10.6  11.1  T
+       3   F     9.5  13.1  13.8  N
+       4   M    11.5  13.4  12.9  F
+")
+
+```
+
+```{r}
+ data %>% 
+  mutate(subject = recode(subject,
+                          "1" = "001",
+                          "2" = "002",
+                          "3" = "003",
+                          "4" = "004"),
+         sex = if_else(sex == "M","Male","Female"),
+         compl = recode(compl,
+                        "T" = TRUE,
+                        "F" = FALSE,
+                        .default = NA))
+```
+# NA values must match the value types of the rest of the data set:
+i.e. NA_character_ for text based column.
+
+
+# case_when()
+
+```{r}
+x <- 1:10
+
+case_when(x <= 7 ~ "A",
+          x <= 5 ~ "B",
+          TRUE ~ "C")
+
+```
+
+```{r}
+students_big %>% 
+  select(ageyears) %>% 
+  mutate(
+    age_divisible = case_when(
+      ageyears %% 2 == 0 ~ "Even",
+      ageyears %% 3 == 0 ~ "Divisible by 3",
+      ageyears %% 5 == 0 ~ "Divisible by 5",
+      TRUE               ~ "Other number"
+    )
+  )
+
+```
+
+```{r}
+students_big %>% 
+  select(ageyears) %>% 
+  mutate(
+    ageyears = case_when(
+      ageyears %% 2 == 0 ~ "Even",
+      ageyears %% 3 == 0 ~ "Divisible by 3",
+      ageyears %% 5 == 0 ~ "Divisible by 5",
+      TRUE               ~ as.character(ageyears)
+    )
+  )
+```
+
+# Session 4 - Extra dplyr
+
+```{r}
+new_coders
+
+```
+# using `group_by()` with `mutate()`
+
+```{r}
+new_coders %>% 
+  group_by(reasons_to_code) %>% 
+  summarise(avg_exp_earn = mean(expected_earn))
+
+new_coders %>% 
+  group_by(job_pref) %>% 
+  mutate(avg_exp_earn = mean(expected_earn))
+```
+
+# Window function
+
+lag() and lead()
+
+```{r}
+chinesemeal %>% 
+  mutate(last_year_cals = lag(CaloriesPerDay))
+
+chinesemeal %>% 
+  mutate(next_year_cals = lead(CaloriesPerDay))
+
+chinesemeal %>% 
+  mutate(diff_cals =  CaloriesPerDay - lag(CaloriesPerDay))
+```
+# `across()`
+
+```{r}
+all_deaths
+
+
+
+```
+
+```{r}
+all_deaths %>% 
+  mutate(book1_GoT = as.logical(book1_GoT))
+
+all_deaths %>% 
+  summarise(across(book1_GoT:book5_DwD, sum))
+
+
+```
+
+

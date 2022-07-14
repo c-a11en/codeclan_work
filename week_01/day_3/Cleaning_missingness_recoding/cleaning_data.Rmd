@@ -1,0 +1,48 @@
+---
+title: "Session 1 - Cleaning Data"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+csv - comma separated values
+meta data = data about data
+
+```{r}
+video_games <- read_csv("data/steam-200k-sample.csv", skip = 4)
+video_games
+```
+
+```{r}
+video_games <- read_csv("data/steam-200k-sample.csv",
+                        skip = 4,
+                        col_types = cols("bought online" = col_logical()))
+
+read_csv("data/steam-200k-sample.csv", skip = 4) %>% 
+  mutate(`bought online` = as.logical(`bought online`))
+  # Need to use backquotes (`) here because heading name has a space in it
+
+
+```
+
+```{r}
+# Cleaning up column names using janitor functions
+names(video_games)
+
+video_games_janitor_clean <- video_games %>% 
+  clean_names()
+
+video_games_janitor_clean
+```
+
+```{r}
+# Renaming column names manually
+video_games_janitor_clean %>% 
+  rename(game_title = game_name,
+         activity = what,
+         playing_hours = value)
+```
+
