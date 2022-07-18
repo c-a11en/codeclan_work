@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+
+subject_hr <- tibble( name = c("SUBJ01","SUBJ02","SUBJ03"), 
+  hr_am = c(68,72,68), 
+  hr_pm = c(58,89,52))
+
+subject_hr
+
+```
+
+```{r}
+
+subject_hr %>% 
+  pivot_longer(cols = starts_with("hr"),
+               names_to = "measurements_of_time",
+               values_to = "heartrate")
+
+```
+
+```{r}
+
+income <- tibble(religion = c("Agnostic","Atheist","Buddhist", "Catholic"), 
+  X10k = c(12,25,3,75), 
+  X10k_to_20k = c(34,14,6,60),
+  X20k_to_30k = c(45,22,10,110))
+
+income
+
+```
+
+```{r}
+income %>% 
+  pivot_longer(cols = starts_with("X"),
+               names_to = "Income Range",
+               values_to = "Income")
+
+```
+
+```{r}
+messy_orders <- tibble( name = c("Joe Bloggs","Jane Smith","Penny Jones"), 
+  order_info = c("XY7282/29-06-19","LO0182/15-03-19","AS6812/04-06-19"), 
+  order_amount = c(58.00,125.00,75.25))
+
+messy_orders
+```
+
+```{r}
+
+tidy_orders <- messy_orders %>% 
+  separate(order_info,
+           into = c("order_num", "order_date"),
+           sep = "/")
+
+```
+
+```{r}
+
+hospital_visits <- read_csv("data/hospitals93to98.csv")
+
+```
+
+```{r}
+
+hospital_visits_long <- hospital_visits %>% 
+  pivot_longer(cols = starts_with("FY"),
+              names_to = "year",
+              values_to = "visits",
+              names_prefix = "FY")
+
+```
+
+```{r}
+
+tidy_hospital <- hospital_visits_long %>% 
+  pivot_wider(names_from = Field,
+              values_from = visits) %>% 
+  separate(col = IcdChapter,
+           into = c("code", "description"),
+           sep = "\\.")
+
+```
+
+```{r}
+
+tidy_hospital %>% 
+  unite(disease, c("code", "description"), sep = ".")
+
+```
+
+

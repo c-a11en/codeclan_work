@@ -1,0 +1,96 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+actors <- read_csv("data/actors.csv")
+movies <- read_csv("data/movies.csv")
+roles <- read_csv("data/roles.csv")
+
+```
+
+```{r}
+
+actors
+view(movies)
+roles
+
+```
+Question 2.
+
+What are the primary keys and the foreign keys for each data frame?
+What kind of relationship (one-to-one, one-to-many, many-to-many) is there between
+- actors and roles - one to many - pk = ID, fk = ID
+- movies and roles - one to many - pk = ID, fk = ID
+- actors and movies - many to many - pk = role, fk = actor_id & movie_id
+
+```{r}
+
+# 192017
+
+little_mermaid_roles <- roles %>%
+  filter(movie_id == "192017")
+
+```
+
+```{r}
+
+left_join(little_mermaid_roles, actors, by = c("actor_id" = "id"))
+
+```
+
+```{r}
+
+inner_join(little_mermaid_roles, actors, by = c("actor_id" = "id"))
+
+```
+
+```{r}
+
+actors_more_than_once <- actors %>% 
+  filter(film_count > 1)
+
+```
+
+```{r}
+actors_more_than_once %>%
+  left_join(roles, by = c("id" = "actor_id")) %>% 
+  left_join(movies, by = c("movie_id" = "id")) %>% 
+  mutate(rank = as.numeric(rank)) %>%
+  group_by(first_name, last_name) %>% 
+  summarise(avg_rank = mean(rank, na.rm = T)) %>%
+  ungroup() %>% 
+  slice_max(avg_rank, n = 5, with_ties = F)
+
+```
+
+
+### Busiest actor
+
+```{r}
+
+dataset_complete <- actors_more_than_once %>% 
+  left_join(roles, by = c("id" = "actor_id")) %>% 
+  left_join(movies, by = c("movie_id" = "id"))
+
+
+busiest_actor <- dataset_complete %>% 
+  group_by(id, first_name, last_name) %>% 
+  summarise(num_films = n()) %>% 
+  arrange(desc(num_films)) %>% 
+  head(1)
+
+```
+
+List the films they appear in, the year the film was released and their role
+in the film.
+
+```{r}
+
+semi_join(dataset_complete, busiest_actor, "id")
+
+```

@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+country_data <- read_csv("data/country_data.csv")
+
+```
+
+```{r}
+
+country_tidy <- country_data %>% 
+  pivot_longer(cols = starts_with("Y"),
+               names_to = "year",
+               values_to = "value",
+               names_prefix = "Y") %>% 
+  pivot_wider(names_from = type, values_from = value) %>% 
+  separate(col = country, into = c("id", "country"), sep = "\\.") %>% 
+  unite(col = "country_code",
+        remove = TRUE, c("code_letter","code_numb"),
+        sep = "")
+
+```
+
