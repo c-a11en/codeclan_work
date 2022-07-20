@@ -1,0 +1,170 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Functions
+
+```{r}
+
+nchar("hello", "chars", TRUE, NA)
+nchar("hello")
+
+```
+
+```{r}
+
+nchar("hello", allowNA = TRUE)
+
+```
+
+```{r}
+
+paste("a", "b", "c", "d", sep = "--")
+nchar(c("apple", "banana", "cherry"))
+
+
+```
+
+### Writing our own FUN
+
+```{r}
+
+function_name <- function(par_1, par_2 = NULL, par_3 = "default_value") {
+  stuff to do
+  # the last thing that is done will be the "return" value
+  return(value)
+}
+  
+```
+
+```{r}
+
+multiply_by_5 <- function(x) {
+  x * 5
+}
+
+multiply_by_5(2)
+
+```
+
+```{r}
+
+multiply_by <- function(x, y) {
+  x * y
+}
+
+multiply_by(2, 10)
+
+```
+
+```{r}
+
+multiply_by <- function(x, y = 3) {
+  x * y
+}
+
+multiply_by(x = 2)
+
+```
+
+```{r}
+make_price <- function(value) {
+  paste0("£", value)
+}
+
+make_price(5)
+make_price(123)
+
+x <- c(1,2,3)
+y <- matrix(1:6, 2)
+
+make_price(x)
+make_price(y)
+```
+
+$$
+T_n = \frac{n(n+1)}{2}
+$$
+
+
+```{r}
+tri_nos <- function(n) {
+  t <- n * (n + 1) / 2
+  c(n = n, total = t) # return vector
+}
+
+tri_nos(4)
+
+```
+
+```{r}
+n <- 8 # global scope
+
+multiply_by_n <- function(x) { # x is local scope (local to function)
+  x * n
+}
+
+multiply_by_n(2)
+
+```
+
+_Do not use any variables that are not declared locally_
+
+```{r}
+
+n <- 8
+
+multiply_by_n <- function(x, n) { # x is local scope (local to function)
+  x * n
+}
+
+multiply_by_n(2, 9)
+
+```
+
+```{r}
+
+multiply_by_n <- function(x, n) { # x is local scope (local to function)
+  ans <- x * n
+  if(ans %% 2 == 1) {
+    z <- paste("x is odd")
+  } else {
+    z <- paste("x is even")
+  }
+  
+  z
+}
+
+multiply_by_n(3, 3)
+
+```
+
+### Best practice for writing functions
+
+_good_
+
+Name with verbs if you can
+
+'add_3()'
+'format_number()'
+'read_data()'
+
+_bad_
+
+'adder()'
+'number_formatter()'
+'data_reader()'
+
+
+```{r}
+multiply_by_n <- function(x) {
+  x * n
+}
+
+
+```
+
+# Debugging
+
+debugonce(function_name) #go line by line through function

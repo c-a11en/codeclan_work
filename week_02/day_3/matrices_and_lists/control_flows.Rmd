@@ -1,0 +1,267 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+### Session 2 - Control Flow
+
+# "if" statements
+
+```{r}
+
+if(this_thing_is true) { # THEN
+  # do this thing
+} else {
+  # do this thing instead
+}
+
+```
+
+```{r}
+
+x <- 10
+y <- 20
+
+if(x < y) {
+  print("Yes")
+}
+
+```
+
+```{r}
+
+x <- 10
+y <- 5:20
+
+if(x %in% y) {
+  print("Yes")
+}
+
+
+
+```
+
+Write an if statement that prints ‘Yes that divides by 2’ if a number x is divisible by 2 (hint: use %% 2 == 0 as your expression), try it out for different values of x.
+
+```{r}
+
+x <- 10
+
+if(x %% 2 == 0){
+  print("Yes that divides by 2")
+}
+
+```
+
+```{r}
+
+x <- 10
+
+if(x %% 2 == 0){
+  print("Yes that divides by 2")
+} else {
+  print("Nope that does not divide by 2")
+}
+
+```
+
+```{r}
+
+x <- 20
+y <- 20
+
+if(x %in% y) {
+  print("Yes")
+} else {
+  print("No")
+}
+
+```
+
+x = 5, y = 10 -> _"x is in our list" "x is exactly 5"_
+x = 6, y = 12 -> _"Start of else statement" "x divides y" "End of else statement"_
+x = 6, y = 13 -> _"Start of else statement" "x does not divide Y" "End of else statement"_
+
+```{r}
+
+x <- 5
+y <- 10
+
+if (x %in% c(3, 4, 5)){
+  
+  print("x is in our list")
+  
+  if (x == 5){
+    
+    print("x is exactly 5")
+    
+  }
+  
+} else {
+  
+  print("Start of else statement")
+  
+  if (y %% x == 0){
+    
+    print("x divides y")
+  
+  } else{
+    
+    print("x does not divide Y")
+  }
+  
+  print ("End of else statement")
+  
+}
+
+
+```
+
+## Loops
+
+
+### "for()" loops
+
+- for loops
+  - used when we know how many iterations we need
+  - will end after desired number of loops
+
+```{r}
+
+v <- 10:20
+
+for (item in v) {
+  print(item * 2)
+}
+
+```
+
+```{r}
+
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+
+for (day in weekdays) {
+  # browser()   # used to go through loop step by step.
+  print(paste("The day is", day))
+}
+
+```
+### "while()" loops
+
+
+- while loops
+  - used when we don't know how many iterations
+  - will end when a condition is met
+
+
+```{r}
+
+current_value <- 1 # initialise first
+stop_value <- 10
+
+while(current_value < stop_value) {
+  print(current_value)
+  current_value <- current_value + 1
+}
+
+# # infinite loop
+# while(current_value < stop_value) {
+#   print(current_value)
+# }
+
+```
+
+### Alternative ways to index for a loop
+
+```{r}
+
+weekdays
+len_weekdays <- length(weekdays)
+
+for (i in 1:len_weekdays) {
+  phrase <- paste("The day is", weekdays[i])
+  print(phrase)
+}
+
+
+
+```
+
+### Replace a vector from a loop __TERRIBLE PRACTICE__
+
+```{r}
+
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+len_weekdays <- length(weekdays)
+
+for (i in 1:len_weekdays) {
+  plural <- paste0(weekdays[i], "s") # adding 's' to each vector element
+  weekdays[i] <- plural # replacing element from old with new plural element
+}
+
+weekdays
+
+```
+
+### Nested for loop
+
+```{r}
+
+m <- matrix(1:12, 4)
+nrows <- nrow(m)
+ncols <- ncol(m)
+
+for (row_i in 1:nrows) {
+  print(m[row_i, ])
+}
+
+for (row_i in 1:nrows) {
+  for (col_i in 1:ncols) {
+      print(m[row_i, col_i])
+  }
+}
+
+```
+
+```{r}
+
+my_matrix <- matrix(rnorm(25), 5)
+
+num_rows <- dim(my_matrix)[1]
+num_cols <- dim(my_matrix)[2]
+
+```
+
+```{r}
+
+product_matrix <- matrix(nrow = 5, ncol = 5)
+nrow <- dim(product_matrix)[1]
+ncol <- dim(product_matrix)[2]
+
+
+for (row in 1:nrow) {
+  for(col in 1:ncol){
+    product_matrix[row, col] <- row * col
+  }
+}
+
+product_matrix
+
+```
+
+```{r}
+
+example_matrix = matrix(1:25, nrow = 5, ncol = 5)
+example_matrix 
+
+for (row_index in 1:5){
+  for (col_index in 1:5){
+    if (row_index == col_index){
+      print(example_matrix[row_index, col_index])
+    }
+   }
+}
+
+```
+

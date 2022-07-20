@@ -1,0 +1,191 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Session 1 - Matrices and Lists
+
+
+```{r}
+
+library(tidyverse)
+
+```
+
+
+```{r}
+
+x <- list(1, "a", TRUE, c(1,2,3))
+
+# x
+
+v <- 1:5
+
+# v
+
+c(1, "a", TRUE, c(1,2,3))
+
+# v
+
+as.list(v)
+
+```
+
+```{r}
+
+x[[4]]
+x[4]
+v[[2]]
+v[2]
+
+glimpse(x)
+str(x)
+
+```
+
+### Named List
+
+```{r}
+
+named_list <- list(a = c("I love R","hi"), b = 1:10)
+
+named_list
+
+str(named_list)
+
+named_list$a
+named_list$b
+
+names(named_list)
+
+# using list index
+named_list[[1]] # equivalent to pull function in tidyverse.
+named_list[1]   # equivalent to select function in tidyverse.
+
+# using list name identifier
+named_list[['a']]
+named_list['a']
+
+
+```
+
+```{r}
+
+student_info <- list(
+                      "Agnes" = list(height = 1.8, shoe_size = 8L),
+                      "Bobby" = list(height = 2.1, gender = "Male"),
+                      "Charlie" = list(gender = "Female", likes_beets = TRUE)
+)
+
+student_info
+str(student_info)
+
+student_info$Agnes$height
+student_info[["Agnes"]][["height"]]
+
+n <- "Agnes"
+student_info$Agnes$height       #use this if you are sure which column you want and it won't change
+student_info[[n]][["height"]]   # use this if you want to access programmatically, it's also safer if list names change
+
+
+```
+
+    Make a named list that contains a numeric vector and a character vector.
+    Access the second element of your list using double square brackets [[]]. What is it’s class?
+    Access the second element of your list using single square brackets []. What is it’s class?
+    Access the second element of your list by name. What is it’s class?
+
+```{r}
+
+v <- list(num = 1, chr = "a")
+
+v[[2]]
+class(v[[2]])
+# outputs class is character
+
+v[2]
+class(v[2])
+# output class is list
+
+class(v[["chr"]])
+class(v$chr)
+# output class is character
+
+```
+
+### Matrices
+
+dataframes are _heterogeneous_ data structures
+vectors/matrices are _homogeneous_ data structures
+
+### Creating Matrices
+
+```{r}
+
+m <- matrix(1:12, ncol = 3, byrow = F)
+v <- 1:5
+v
+
+class(m)
+typeof(m)
+
+
+```
+
+# Indexing a matrix
+
+```{r}
+
+m[1, ] # select first row
+m[, 1] # select first col
+
+class(m[1, ])
+is.vector(m[1, ])
+
+m[1,2] # select individual value
+m[2:3, ] # returns rows 2 and 3 and every column
+m[c(1,3), c(1,3)] # select specific rows and columns
+m[c(1,3), -2] # select specific rows and columns (minus sign removes 2nd col)
+
+v <- 10:15
+v[-2]
+
+```
+
+```{r}
+
+v * 2
+
+m * 2
+
+```
+
+```{r}
+
+m
+rowSums(m)
+colSums(m)
+
+rowMeans(m)
+colMeans(m)
+
+```
+
+Task - 5 minutes
+    Make a matrix with 3 rows and 4 columns. Each column should contain the numbers 1 to 3.
+    Find the element in the 2nd row, 3rd column.
+    Check that all the columns are identical by checking that their sums are the same.
+    
+```{r}
+
+m <- matrix(1:3, nrow = 3, ncol = 4)
+m
+
+m[2,3]
+colSums(m)
+
+colnames(m) <- paste0("col_", 1:4)
+rownames(m) <- paste0("row_", 1:3)
+m["row_3", "col_2"]
+
+```
