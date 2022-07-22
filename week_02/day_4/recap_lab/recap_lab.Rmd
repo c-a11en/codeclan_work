@@ -17,7 +17,7 @@ diet_comp <- read_csv("data/dietary-composition-by-country.csv") %>%  clean_name
 ```
 
 ```{r}
-
+# view data
 country_codes
 diet_comp
 
@@ -27,7 +27,7 @@ diet_comp
 ```{r}
 
 diet_comp_clean <- diet_comp %>% 
-  pivot_longer(alcoholic_beverages_fao_2017:wheat_fao_2017, names_to = "kcal_source", values_to = "avg_daily_kcals")
+  pivot_longer(ends_with("_fao_2017"), names_to = "kcal_source", values_to = "avg_daily_kcals")
 
 ```
 
@@ -58,7 +58,9 @@ diet_comp_clean %>%
 
 country_list <- diet_comp_clean %>% 
   filter(is.na(code)) %>% 
-  distinct(country)
+  distinct(country, code)
+
+country_list
 
 diet_comp_clean %>% 
   filter(!is.na(code)) %>%
@@ -95,11 +97,12 @@ diet_comp_clean <- diet_comp_clean %>%
                                          "USA", code))))
 
 diet_comp_clean %>% 
-  summarise(num_na = sum(is.na(code))) #used ot check if code column has any NAs
+  summarise(num_na = sum(is.na(code))) #used to check if code column has any NAs
 
 ```
 
 ```{r}
+
 diet_comp_clean %>% 
   inner_join(country_codes, "country") %>% 
   mutate(is_match = if_else(str_sub(code, start = 1, end = 2) == alpha_2_code,
@@ -158,11 +161,13 @@ Code below works only if the input vectors do not have an NA in the first index.
 ```{r}
 
 find_top_source <- function(country, year) {
-  
-  # calculating length of input vectors
-  c_len <- length(country)
-  y_len <- length(year)
 
+  # create empty dataframe with named columns
+  output <- data.frame(country = character(),
+                       year= numeric(),
+                       top_kcal_source = character()) 
+  
+  
   for (i in country) { # i is each country
 
     if (is.na(i)) {
@@ -179,21 +184,16 @@ find_top_source <- function(country, year) {
       top_source <- diet_comp_clean %>%
         filter(country == i, year == j) %>%
         slice_max(avg_daily_kcals, n = 1) %>%
-        select(country, year, kcal_source)
+        select(country, year, kcal_source) %>% 
+        rename("top_kcal_source" = "kcal_source")
 
-      # if first element, create first output row, else append to output
-      if (i == country[1] & j == year[1]) {
-        output <- top_source
-      } else {
-        output <- bind_rows(output, top_source)
+      output <- bind_rows(output, top_source)
       }
     }
-  }
-  output <- rename(output, "top_kcal_source" = "kcal_source")
   return(output)
 }
 
-country <- c("United Kingdom", "Zimbabwe", "Indonesia")
+country <- c("United Kingdom", "Zimbabwe")
 year <- c(1965, 1975, 1985, 1995, 2005)
 
 find_top_source(country, year)
@@ -205,13 +205,13 @@ Use your function to find the top calorie source in 1970 for all countries start
 
 ```{r}
 
-pattern <- "[B][a-z]+"
+pattern <- "[B][a-zA-Z ]+"
 
 B_countries <- diet_comp_clean %>%
   select(country) %>% 
   filter(!is.na(country)) %>% 
   distinct() %>% 
-  str_extract_all(pattern) %>% 
+  str_extract_all(pattern) %>%
   unlist()
 
 year <- 1970
