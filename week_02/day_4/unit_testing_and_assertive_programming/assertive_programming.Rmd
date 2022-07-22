@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+weather_one <- read_csv("data/delhi_weather_one.csv")
+weather_two <- read_csv("data/delhi_weather_two.csv")
+
+```
+
+```{r}
+
+weather_report <- function(weather){
+  # Our average temperature, humidity and wind speed 
+  weather_means <- 
+  weather %>% 
+  summarise(
+    mean_temp = mean(temp),
+    mean_humidity = mean(humidity),
+    mean_windspeed = mean(wind_speed)
+  )
+
+# Show hot and humid days
+hot_and_humid <- 
+weather %>% 
+  filter(temp > 20) %>% 
+  filter(humidity > 55)
+
+return(list(weather_means, hot_and_humid))
+}
+
+weather_report(weather_one)
+
+```
+
+```{r}
+
+weather_report(weather_two)
+
+```
+
+Using assertr
+
+```{r}
+
+library("assertr")
+
+```
+
+```{r}
+
+weather_report <- function(weather){
+  
+  # put in the checks in the data first
+  weather %>% 
+    # humidity is a proportion
+    verify(humidity >= 0 & humidity <= 100) %>%
+    # lowest ever temp in Delhi was -21, and highest + 51
+    verify(temp >= -35 & temp <= 55) %>% 
+    # max global wind speed is 108
+    verify(wind_speed >= 0 & wind_speed <= 108)
+  
+  # Our average temperature, humidity and wind speed 
+  weather_means <- 
+  weather %>% 
+  summarise(
+    mean_temp = mean(temp),
+    mean_humidity = mean(humidity),
+    mean_windspeed = mean(wind_speed)
+  )
+
+# Show hot and humid days
+  hot_and_humid <- 
+  weather %>% 
+    filter(temp > 20) %>% 
+    filter(humidity > 55)
+
+return(list(weather_means, hot_and_humid))
+}
+
+weather_report(weather_two)
+
+```
+example with stopifnot() for more general checks.
+
+```{r}
+
+weather_report <- function(weather){
+
+  # stop the function if any of the following arguments return FALSE  
+  stopifnot(
+    nrow(weather) > 15,
+    ncol(weather) == 4,
+    # check for missing values
+    drop_na(weather) == weather
+  )
+
+  # put in the checks in the data first
+  weather %>% 
+    # humidity is a proportion
+    verify(humidity >= 0 & humidity <= 100) %>%
+    # lowest ever temp in Delhi was -21, and highest + 51
+    verify(temp >= -35 & temp <= 55) %>% 
+    # max global wind speed is 108
+    verify(wind_speed >= 0 & wind_speed <= 108)
+  
+  # Our average temperature, humidity and wind speed 
+  weather_means <- 
+  weather %>% 
+  summarise(
+    mean_temp = mean(temp),
+    mean_humidity = mean(humidity),
+    mean_windspeed = mean(wind_speed)
+  )
+
+# Show hot and humid days
+  hot_and_humid <- 
+  weather %>% 
+    filter(temp > 20) %>% 
+    filter(humidity > 55)
+
+return(list(weather_means, hot_and_humid))
+}
+
+weather_report(weather_two)
+
+
+```
+
+

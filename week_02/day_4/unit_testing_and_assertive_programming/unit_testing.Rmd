@@ -1,0 +1,132 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+is_leap_year <- function(year) {
+  
+  if(year %% 100 == 0){
+    if(year %% 400 == 0) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+    
+  }
+  
+  if(year %% 4 == 0) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+  
+}
+
+```
+
+
+testthat package
+
+```{r}
+
+library(testthat)
+
+```
+expect_equal(): checking that the objects give the answer we expect.
+expect_error(): checking that the code throws an error
+
+```{r}
+a <- 10
+```
+
+```{r}
+
+expect_equal(a, 10)
+
+```
+
+```{r}
+
+expect_equal(a, 11)
+
+```
+
+test_that()
+
+```{r}
+
+test_that("Real leap years return TRUE", {
+  expect_equal(is_leap_year(2020), TRUE)
+  expect_equal(is_leap_year(2000), TRUE)
+})
+
+
+```
+
+```{r}
+
+test_that("Character input returns an error", {
+  expect_error(is_leap_year("year"))
+})
+
+```
+
+Test name is : "Character input returns an error"
+Expectation: is_leap_year function to return an error since character was input
+The test is satisfied if the is_leap_year function returns an error
+
+```{r}
+
+test_that("Non-numeric input returns an error", {
+  expect_error(is_leap_year("year"))
+  expect_error(is_leap_year(TRUE))
+})
+
+```
+
+```{r}
+
+is_leap_year <- function(year) {
+  
+  #add in condition for non-numeric data
+  if(!is.numeric(year)) {
+    stop("Non-numeric input :(")
+  }
+  
+  if(year %% 100 == 0){
+    if(year %% 400 == 0) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+    
+  }
+  
+  if(year %% 4 == 0) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+```
+
+```{r}
+
+test_that("Non-numeric input returns an error", {
+  expect_error(is_leap_year("year"))
+  expect_error(is_leap_year(TRUE))
+})
+
+```
+
+```{r}
+test_that("Non-leap years return FALSE", {
+  expect_equal(is_leap_year(2017), FALSE)
+  expect_equal(is_leap_year(1900), FALSE)
+})
+
+```
+

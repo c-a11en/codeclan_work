@@ -1,0 +1,222 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Question 1
+
+```{r}
+# Initialise by importing libraries
+library(tidyverse)
+library(tidyr)
+library(janitor)
+
+country_codes <- read_csv("data/country_codes.csv") %>%  clean_names()
+diet_comp <- read_csv("data/dietary-composition-by-country.csv") %>%  clean_names()
+
+```
+
+```{r}
+
+country_codes
+diet_comp
+
+```
+# Question 2
+
+```{r}
+
+diet_comp_clean <- diet_comp %>% 
+  pivot_longer(alcoholic_beverages_fao_2017:wheat_fao_2017, names_to = "kcal_source", values_to = "avg_daily_kcals")
+
+```
+
+# Question 3
+
+```{r}
+
+diet_comp_clean <- diet_comp_clean %>% 
+  mutate(kcal_source = str_replace(kcal_source, "_fao_2017", ""),
+         kcal_source = str_replace(kcal_source, "_", " "),
+         kcal_source = str_to_title(kcal_source)) %>% 
+  rename("country" = "entity")
+
+```
+
+# Question 4
+
+```{r}
+
+diet_comp_clean %>% 
+  summarise(across(everything(), ~sum(is.na(.x))))
+
+```
+
+# Question 5
+
+```{r}
+
+country_list <- diet_comp_clean %>% 
+  filter(is.na(code)) %>% 
+  distinct(country)
+
+diet_comp_clean %>% 
+  filter(!is.na(code)) %>%
+  semi_join(country_list, by = "country")
+
+# There are no matches for Cabo Verde or USA
+
+```
+
+# Question 6
+
+```{r}
+# recode country codes substituting USA and Cabo Verde
+country_codes_recoded <- country_codes %>% 
+  mutate(country = recode(country,
+                          "United States" = "United States of America",
+                          "Cape Verde" = "Cabo Verde"))
+
+missing_country_codes <- country_codes_recoded %>% 
+  semi_join(country_list, "country") %>% 
+  select(-alpha_2_code)
+
+missing_country_codes
+
+```
+
+# Question 7
+
+```{r}
+
+diet_comp_clean <- diet_comp_clean %>% 
+  mutate(code = coalesce(code, if_else(country == "Cabo Verde", "CPV",
+                                 if_else(country == "United States of America",
+                                         "USA", code))))
+
+diet_comp_clean %>% 
+  summarise(num_na = sum(is.na(code))) #used ot check if code column has any NAs
+
+```
+
+```{r}
+diet_comp_clean %>% 
+  inner_join(country_codes, "country") %>% 
+  mutate(is_match = if_else(str_sub(code, start = 1, end = 2) == alpha_2_code,
+                            TRUE, FALSE))
+
+```
+
+# Question 9
+
+```{r}
+
+uk_diet <- diet_comp_clean %>% 
+  filter(country == "United Kingdom") %>% 
+  drop_na()
+
+```
+
+# Question 10
+
+```{r}
+
+uk_diet_tc <- uk_diet %>%
+  group_by(year) %>% 
+  summarise(total_calories = sum(avg_daily_kcals)) %>% 
+  mutate(difference_from_prev_yr  = total_calories - lag(total_calories, 1))
+
+uk_diet_tc
+
+# largest positive change in total calories
+uk_diet_tc %>%
+  slice_max(difference_from_prev_yr, n = 1)
+
+# largest negative change in total calories
+uk_diet_tc %>% 
+  slice_min(difference_from_prev_yr, n = 1)
+
+```
+
+# Question 11
+
+```{r}
+
+diet_comp_clean %>% 
+  filter(year >= 1990 & year <= 2000, kcal_source == "Alcoholic Beverages") %>%
+  group_by(year) %>% 
+  mutate(max_calories_in_year = max(avg_daily_kcals, na.rm = T)) %>% 
+  filter(avg_daily_kcals == max_calories_in_year) %>% 
+  select(country, year)
+
+```
+
+# Question 12
+
+Code below works only if the input vectors do not have an NA in the first index.
+
+```{r}
+
+find_top_source <- function(country, year) {
+  
+  # calculating length of input vectors
+  c_len <- length(country)
+  y_len <- length(year)
+
+  for (i in country) { # i is each country
+
+    if (is.na(i)) {
+      next
+    }
+
+    for (j in year) { # j is each year
+
+      if (is.na(j)) {
+        next
+      }
+
+      # for each year and country create the row in the table to be appended to the master output table
+      top_source <- diet_comp_clean %>%
+        filter(country == i, year == j) %>%
+        slice_max(avg_daily_kcals, n = 1) %>%
+        select(country, year, kcal_source)
+
+      # if first element, create first output row, else append to output
+      if (i == country[1] & j == year[1]) {
+        output <- top_source
+      } else {
+        output <- bind_rows(output, top_source)
+      }
+    }
+  }
+  output <- rename(output, "top_kcal_source" = "kcal_source")
+  return(output)
+}
+
+country <- c("United Kingdom", "Zimbabwe", "Indonesia")
+year <- c(1965, 1975, 1985, 1995, 2005)
+
+find_top_source(country, year)
+
+```
+# Question 13
+
+Use your function to find the top calorie source in 1970 for all countries starting with B.
+
+```{r}
+
+pattern <- "[B][a-z]+"
+
+B_countries <- diet_comp_clean %>%
+  select(country) %>% 
+  filter(!is.na(country)) %>% 
+  distinct() %>% 
+  str_extract_all(pattern) %>% 
+  unlist()
+
+year <- 1970
+
+find_top_source(B_countries, 1970)
+
+```
+
