@@ -190,6 +190,9 @@ SELECT
 FROM employees 
 WHERE concat(first_name, ' ', last_name) LIKE 'A%';
 
+ -- Scratchpad
+
+SELECT (EXTRACT(YEAR FROM Now()))
 
 
 
