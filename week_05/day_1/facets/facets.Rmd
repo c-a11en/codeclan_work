@@ -1,0 +1,77 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+
+chick_weight <- ChickWeight %>%  janitor::clean_names()
+
+```
+
+```{r}
+
+chick_weight %>% 
+  ggplot(aes(x = time,
+             y = weight,
+             group = chick,
+             colour = diet)) +
+  geom_line()
+
+```
+
+```{r}
+
+chick_weight %>% 
+  ggplot(aes(x = time,
+             y = weight,
+             group = chick,
+             colour = diet)) +
+  geom_line() +
+  facet_wrap(~ diet,
+             nrow = 1)
+
+```
+
+```{r}
+
+benefits <- read_csv("data/benefits.csv")
+
+
+```
+
+```{r}
+
+benefits %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram() +
+  facet_wrap(~ sex) +
+  labs(x = "Age",
+       y = "Count",
+       title = "Frequency of unemployed blue collar workers",
+       subtitle = "Split by gender")
+
+```
+
+```{r}
+
+benefits %>% 
+  ggplot(aes(x = age,
+             fill = sex)) +
+  geom_histogram(col = "White") +
+  facet_grid(married ~ sex,
+             labeller = "label_both")
+
+```
+
+```{r}
+
+benefits %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram(col = "White") +
+  facet_wrap(~ sex,
+             nrow = 1,
+             scales = "free_y")
+
+```

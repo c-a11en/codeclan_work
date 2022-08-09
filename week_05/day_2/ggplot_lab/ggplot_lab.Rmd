@@ -1,0 +1,184 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(ggrepel)
+
+late_deliveries <- read_csv("data/late_deliveries.csv")
+recovery_times <- read_csv("data/recovery_times.csv")
+fitness_levels <- read_csv("data/fitness_levels.csv")
+
+
+```
+
+```{r}
+
+late_deliveries %>% 
+  ggplot(aes(date, late_deliveries)) +
+  geom_line() +
+  labs(x = "Date",
+       y = "Late Deliveries",
+       title = "Number of late deliveries from 2015 to 2019")
+
+```
+
+```{r}
+
+late_deliveries %>% 
+  mutate(year = str_extract(date, "[0-9]{4}"),
+         month = str_extract(date, "-[0-9]{2}-")) +
+  separate(date, c("year", "month", "day"), sep = "-")
+  # mutate(separate(date, into = c("year", "month", "day"), sep = "-"))
+  # ggplot(aes(date, late_deliveries, colour = year)) +
+  # geom_line()
+
+
+```
+
+```{r}
+rt_factored <- recovery_times %>% 
+  mutate(prognosis = factor(prognosis, labels = c("Poor", "Average", "Good", "Excellent")))
+
+
+rt_factored %>% 
+  ggplot(aes(treatment_group, recovery, fill = recovery)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ prognosis, nrow = 1) +
+  labs(x = "Treatment Group",
+       y = "Recovery\n",
+       title = "Effects of recovery time by treatment group") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+
+```
+
+```{r}
+
+fitness_levels %>% 
+  ggplot(aes(age, fitness_score, fill = child)) +
+  geom_line(aes(colour = child), show.legend = FALSE) +
+  facet_wrap(~ group, nrow = 1, labeller = "label_both") +
+  geom_text(data = fitness_levels %>% 
+              group_by(child) %>% 
+              filter(age == 13),
+            aes(label = child),
+            size = 2,
+            nudge_x = 0.2,
+            check_overlap = TRUE) +
+  labs(x = "Age",
+       y = "Fitness Score")
+
+```
+```{r}
+
+fitness_levels %>%
+  group_by(group, age) %>% 
+  mutate(mean_group_score = mean(fitness_score)) %>%
+  mutate(group = as_factor(group)) %>% 
+  ggplot() +
+  aes(x = age, y = mean_group_score, group = group, colour = group) +
+  geom_line()
+
+```
+
+
+```{r}
+
+blood_pressure <- read_csv("data/blood_pressure.csv")
+
+```
+
+```{r}
+
+blood_pressure %>% 
+  ggplot(aes(daily_saturated_fat_intake_mg, systolic_blood_pressure_mm_hg)) +
+  geom_point() +
+  labs(x = "Daily Saturated Fat Intake (mg)",
+       y = "Systolic Blood Pressure (mmHg)",
+       title = "Saturated Fat Intake vs Systolic Blood Pressure")
+
+```
+
+```{r}
+
+car_use <- read_csv("data/car_use.csv")
+
+```
+
+```{r}
+
+car_use %>%
+  mutate(pop_car_usage = car_use_percent * population) %>% 
+  ggplot(aes(pop_car_usage, air_so2_concentration_ppm, label = city)) +
+  geom_point() +
+  geom_text_repel(size = 3, min.segment.length = 0.01, colour = "gray60") + 
+  labs(x = "Population Car Usage",
+       y = "Air SO2 Concentration (ppm)")
+
+```
+
+```{r}
+
+d20_outcomes <- read_csv("data/d20_outcomes.csv")
+
+```
+
+```{r}
+
+d20_outcomes %>% 
+  arrange(outcome) %>% 
+  group_by(outcome) %>% 
+  summarise(count = n())
+
+
+d20_outcomes %>% 
+  ggplot(aes(outcome)) +
+  geom_bar() +
+  labs(x = "Outcomes",
+       y = "Count",
+       title = "Frequency of outcomes")
+
+```
+
+
+```{r}
+
+d20x5_outcomes <- read_csv("data/d20x5_outcomes.csv")
+
+```
+
+```{r}
+d20x5_outcomes %>% 
+  arrange(outcome) %>% 
+  group_by(outcome) %>% 
+  summarise(count = n())
+
+d20x5_outcomes %>% 
+  ggplot(aes(outcome)) +
+  geom_bar() +
+  labs(x = "Outcomes",
+       y = "Count",
+       title = "Frequency of outcomes: d20 x 5")
+
+```
+
+```{r}
+
+pension_surplus <- read_csv("data/pension_surplus.csv")
+pension_liabilities <- read_csv("data/pension_liabilities.csv")
+
+```
+
+```{r}
+
+pension_surplus %>% 
+  ggplot(aes(item, balance, fill = sign)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+

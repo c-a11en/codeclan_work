@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+total_sales <- CodeClanData::total_sales
+
+```
+
+
+***HIDING LEGEND***
+show.legend = FALSE in geom_...() hides legend
+OR
+guide = "none" in scale_fill_manual also hides legend
+
+```{r}
+
+pal <- c("grey", Leeds = "red")
+
+ggplot(total_sales,
+       aes(sales, reorder(branch, sales), 
+                        fill = branch)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = pal, guide = "none")
+
+
+```
+
+```{r}
+
+total_sales_anno <- mutate(total_sales, label_text = ifelse(branch == "Leeds",
+                                               "The Leeds branch has sales of 715k",
+                                               NA))
+
+ggplot(total_sales_anno,
+       aes(sales, reorder(branch, sales), 
+                        fill = branch)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = pal, guide = "none") +
+  geom_text(aes(label = label_text),
+            colour = "red", size = 4, hjust = 0)
+
+```
+
+```{r}
+
+monthly_sales <- CodeClanData::monthly_sales
+
+```
+
+```{r}
+
+monthly_sales_anno <- monthly_sales %>% 
+  mutate(is_positive = if_else(difference_from_jan > 0, T,F))
+
+
+
+monthly_sales_anno %>% 
+  filter(month == "April") %>% 
+  ggplot(aes(reorder(branch, -difference_from_jan),
+             difference_from_jan,
+             fill = is_positive)) +
+  geom_col() +
+  scale_fill_manual(values = c("red", "green"), guide = "none") +
+  labs(x = "Branch",
+       y = "Change since Jan",
+       title = "Change in Monthly Sales between January and April") +
+  scale_y_continuous(labels = scales::dollar_format(prefix = "£")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+# Example from notes
+
+```{r}
+
+monthly_sales_april <- monthly_sales %>%
+  filter(month == "April") 
+
+min_max <-max(abs(monthly_sales_april$difference_from_jan))
+  
+
+ggplot(monthly_sales_april) +
+  aes(
+    x = reorder(branch, difference_from_jan),
+    y = difference_from_jan,
+    fill = difference_from_jan > 0
+  ) +
+  geom_col() +
+  ylim(-min_max, min_max) +
+    labs(y = "Difference in sales", x = "Branch location", title = "Sales differences between January and April") + 
+  scale_fill_manual(values = c("tomato", "seagreen"), name = "", labels = c("decrease", "increase")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+

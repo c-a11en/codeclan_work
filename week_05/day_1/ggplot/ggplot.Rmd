@@ -1,0 +1,263 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+```
+
+```{r}
+
+olympics <- read_csv("data/olympics_overall_medals.csv")
+pets <- read_csv("data/pets.csv")
+students <- read_csv("data/students.csv")
+
+```
+
+```{r}
+
+head(students, 10)
+
+```
+We want to visualise the frequency of superpower incidence among students.
+
+data %>% 
+  ggplot(aes(x = , y = )) +
+  geom_...()
+
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower)) +
+  geom_bar()
+
+```
+
+# Customisation : colour
+
+Inside or outside the aes()
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower)) +
+  geom_bar(fill = "light blue",
+           colour = "red")
+
+```
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower,
+         fill = school_year)) +
+  geom_bar()
+
+```
+
+# Position adjustments
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower,
+         fill = school_year)) +
+  geom_bar(position = "fill")
+
+```
+
+# Statistical Transformations
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower,
+         fill = school_year)) +
+  geom_bar(stat = "count")
+
+```
+
+```{r}
+
+count_data <- students %>% 
+  group_by(superpower, school_year) %>% 
+  summarise(counts = n())
+
+```
+
+```{r}
+
+count_data %>%
+  ggplot(aes(x = superpower,
+             y = counts,
+             fill = school_year)) +
+  geom_bar(stat = "identity")
+
+```
+
+```{r}
+
+count_data %>%
+  ggplot(aes(x = superpower,
+             y = counts,
+             fill = school_year)) +
+  geom_col()
+
+```
+
+# Labels
+
+```{r}
+
+students %>%
+  ggplot(aes(x = superpower,
+         fill = school_year)) +
+  geom_bar() +
+  labs(x = "\nSuperpower",
+       y = "\nCount",
+       title = "Preferred superpower by School Year",
+       subtitle = "Data from students around the world\n",
+       fill = "School Year")
+
+
+```
+
+```{r}
+
+top_10 <- olympics %>% 
+  filter(season == "Summer", medal == "Gold") %>% 
+  slice_max(count, n = 10)
+
+
+top_10 %>% 
+  ggplot(aes(x = reorder(team, -count),
+             y = count)) +
+  geom_col(fill = "gold",
+           colour = "orange") +
+  labs(x = "\nCountry",
+       y = "No. of gold medals won\n",
+       title = "Top 10 countries with the most summer olympic gold medals\n",
+       fill = "Country") +
+  theme(axis.text.x = element_text(angle = 45))
+
+```
+The graph shows that United States won the most olympic medals (over 2,000), 
+much greater than the next highest country (which was the Soviet Union). The 
+following countries all have much close totals of gold medals at the summer 
+games, ranging from just over 500 to around 300 medals.
+
+
+# Layers
+
+
+```{r}
+library(janitor)
+```
+```{r}
+
+chick_weight <- ChickWeight %>% clean_names()
+
+```
+
+```{r}
+
+chick_weight %>% 
+  ggplot(aes(x = time,
+             y = weight,
+             group = chick,
+             colour = diet)) +
+  geom_line()
+
+```
+
+```{r}
+
+chick_weight %>% 
+  ggplot(aes(x = time,
+             y = weight,
+             colour = diet)) +
+  geom_line(aes(group = chick),
+            alpha = 0.25) +
+  geom_point(alpha = 0.25) +
+  geom_smooth()
+
+```
+
+For students data
+x = height
+y = reaction time
+
+```{r}
+
+students %>% 
+  ggplot(aes(x = height_cm, y = reaction_time)) +
+  geom_point(colour = "blue") +
+  labs(x = "Height (cm)",
+       y = "Reaction time (s)",
+       fill = "Superpower",
+       title = "Students height vs reaction time")
+
+```
+
+```{r}
+
+students %>% 
+  ggplot(aes(x = height_cm,
+             y = reaction_time,
+             colour = superpower)) +
+  geom_point() +
+  labs(x = "Height (cm)",
+       y = "Reaction time (s)",
+       colour = "Superpower",
+       title = "Students height vs reaction time",
+       subtitle = "...and preferred superpower")
+
+```
+The graphs show that there is no correlation between height and reaction time.
+However, looking at superpowers it is apparent that all students who would want
+telepathy as a superpower have roughly the same reaction time (interesting?).
+
+```{r}
+
+pets
+
+```
+
+x = age
+y = weight
+colours based on gender
+shape based on type of animal
+points to be size 4
+pet names labels next to every point
+
+```{r}
+
+pets %>% 
+  ggplot(aes(x = age,
+             y = weight,
+             colour = sex)) +
+  geom_point(aes(shape = animal),
+                 size = 4) +
+  geom_text(aes(label = name),
+            nudge_x = 0.8) +
+  labs(x = "Age",
+       y = "Weight",
+       title = "Pet Age vs Weight",
+       colour = "Gender",
+       shape = "Animal",
+       size = "Size")
+
+```
+
+# Saving plots
+
+```{r}
+
+ggsave("g1_sav.png")
+
+```
+
