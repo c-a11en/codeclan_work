@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(shiny)
+
+olympic_overall_medals <- read_csv("data/olympics_overall_medals.csv")
+
+```
+
+Ctrl + P jumps to corresponding bracket pair
+Ctrl + i automatically indents the code correctly
+
+```{r}
+library(ggplot2)
+
+olympic_overall_medals %>%
+  filter(team == "Great Britain",
+         season == "Summer") %>%
+ggplot(aes(x = medal, y = count, fill = medal)) +
+  geom_col()
+
+```
+
