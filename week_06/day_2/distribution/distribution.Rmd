@@ -1,0 +1,669 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+source("../../day_1/prob.R")
+
+```
+
+```{r}
+
+tosscoin(1) %>% 
+  mutate(p = 1/ n())
+
+```
+
+```{r}
+
+s_three_coins <- tosscoin(3)
+
+```
+
+Task - 2 mins what is the probability of each of the eight outcomes if all of the coins are unbiased? What does ‘unbiased’ mean here? Why is it important that each of the coins are unbiased in this calculation?
+
+```{r}
+
+s_three_coins_labelled <- s_three_coins %>% 
+  mutate(outcome = str_c(toss1, toss2, toss3, sep = ""),
+         p = 1 / n()) 
+
+
+s_three_coins_labelled %>% 
+  ggplot(aes(x = outcome, y = p)) +
+  geom_col() # uniform distribution
+
+```
+
+We have assumed above that each coin is equally likely to land as heads or tails.
+This is a uniform distribution.
+
+
+What are the probabilities of getting 0 heads, 1 head, 2 heads or 3 heads when tossing 3 coins?
+
+```{r}
+
+s_three_coins_labelled %>% 
+  mutate(n_heads = str_count(outcome, "H")) %>% 
+  group_by(n_heads) %>% 
+  summarise(p = sum(p)) %>% 
+  ggplot(aes(x = n_heads, y = p)) +
+  geom_col()
+
+```
+The probability distribution is no longer uniform.
+We would call this a _discrete_ probability distribution. (finite/countable)
+
+```{r}
+library(janitor)
+library(lubridate)
+
+```
+
+```{r}
+
+air_con_sales <- read_csv("data/AirConSales.csv")
+
+air_con_clean <- air_con_sales %>% 
+  clean_names() %>% 
+  mutate(date = mdy(date))
+  
+```
+
+```{r}
+
+sales_freqs <- air_con_clean %>% 
+  tabyl(units_sold)
+
+sales_freqs
+```
+
+```{r}
+
+sales_freqs %>% 
+  ggplot(aes(x = units_sold,
+             y = percent)) +
+  geom_col() +
+  theme_classic()
+
+```
+
+```{r}
+
+air_con_sales %>% 
+  summarise(mean_daily_sales = mean(Units_sold),
+            median_daily_sales = median(Units_sold),
+            mode_daily_sales = get_mode(Units_sold))
+
+```
+
+```{r}
+
+get_mode <- function(data){
+
+  tabled_data <- table(data)
+  table_names <- names(tabled_data)
+  
+  return( as.numeric(table_names[tabled_data == max(tabled_data)]) )
+  
+}
+
+```
+
+mean = 6
+median = 4
+mode = 3
+
+# Quantifying skew
+
+```{r}
+
+library(e1071)
+
+```
+
+When quantifying skew we can use the following class table
+
+magnitude classification
+<0.5        fairly symmetric
+0.5 - 1     moderately skewed
+ >1         highly skewed
+ 
+ direction classification
+ negative     left skew
+ positive     right skew
+ 
+ skew = -0.8 (moderately left-skewed)
+ skew = 1.2 (highly right-skewed)
+ 
+
+```{r}
+
+air_con_clean %>% 
+  summarise(skew = skewness(units_sold, type = 1))
+
+```
+
+# Measures of Spread
+
+```{r}
+
+jobs <- read_csv("data/TyrellCorpJobs.csv") %>% 
+  clean_names() %>% 
+  select(-1)
+
+jobs
+```
+
+```{r}
+
+jobs %>% 
+  summarise(range = diff(range(salary)))
+
+```
+
+```{r}
+
+jobs %>% 
+  ggplot(aes(x = salary)) +
+  geom_histogram(col = "white", bins = 25)
+
+```
+
+```{r}
+
+jobs %>% 
+  ggplot(aes(x = salary)) +
+  geom_histogram(col = "white", bins = 25) +
+  facet_wrap(~position)
+
+```
+
+There is strong evidence of bimodality. From now on, consider the two distributions (one for each position).
+
+```{r}
+
+jobs %>% 
+  group_by(position) %>% 
+  summarise(range = diff(range(salary)))
+
+```
+
+There is more salary disparity in Management than in Accounting.
+
+Range is heavily affected by extreme values.
+
+# Interquartile range
+
+```{r}
+
+jobs %>% 
+  group_by(position) %>% 
+  summarise(q1 = quantile(salary, 0.25),
+            q2_median = quantile(salary, 0.5),
+            q3 = quantile(salary, 0.75),
+            iqr = q3 - q1,
+            iqr_function = IQR(salary))
+
+```
+
+The five figure summary:
+
+salary     
+Min.   :29459     (lowest value)
+1st Qu.:33039     (q1)
+Median :35009     (q2 = median)
+3rd Qu.:41990     (q3)
+Max.   :91027     (highest value)
+
+```{r}
+
+library(skimr)
+
+jobs %>% 
+  group_by(position) %>% 
+  skim()
+
+```
+
+# Box plots
+
+Box and whisker
+hinge-plots
+tukey-plots (popularised by John Tukey)
+
+
+Elements of a box plot
+
+```{r}
+
+jobs %>% 
+  ggplot() +
+  aes(x = salary, y = position) +
+  geom_boxplot() +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
+```
+
+## Task - 10 mins
+Investigate and comment on the centrality and spreads of distribution_1 and distribution_2 produced by the following function calls.
+Use geom_boxplot() and skim() first
+Next, plot histograms to confirm your descriptions.
+[Don’t worry about what the functions generating distribution_1 and distribution_2 are doing]
+
+```{r}
+
+set.seed(42)
+distribution_1 <- tibble(
+  y = append(rnorm(n = 100, mean = 5, sd = 10), rnorm(n = 200, mean = 5, sd = 1))
+)
+
+distribution_2 <- tibble(
+  y = runif(n = 1000, min = -30, max = 30)
+)
+
+```
+
+```{r}
+distribution_1 %>% 
+  ggplot(aes(y)) +
+  geom_boxplot()
+  
+distribution_1 %>% 
+  skim()
+
+distribution_1 %>% 
+  ggplot(aes(y)) +
+  geom_histogram(col = "white")
+
+
+```
+Distribution 1 has concentrated values around 5 with a large spread in the data
+(i.e. lots of values considered outliers)
+
+```{r}
+
+distribution_2 %>% 
+  ggplot(aes(y)) +
+  geom_boxplot()
+
+distribution_2 %>% 
+  skim()
+
+distribution_2 %>% 
+  ggplot(aes(y)) +
+  geom_histogram(col = "white")
+
+```
+This distribution tends to follow a uniform distribution with a large spread of 
+data (and interquartile ranges). Each quartile range is approximately the
+same size.
+
+## Variance
+
+Single number value for the measure of spread
+
+a measure of how far each value in the dataset is from the mean.
+
+Sum of the difference from the mean squared and then divided by the number of elements - 1
+
+```{r}
+
+set.seed(42)
+
+londoner_weights <- tibble(
+  marathoners = rnorm(50, mean = 68, sd = 0.5),
+  commuters = rnorm(50, mean = 68, sd = 5)
+) %>% 
+  pivot_longer(cols = everything(), names_to = "group", values_to = "weight")
+
+ggplot(londoner_weights) +
+  aes(x = weight, y = group) +
+  geom_boxplot()
+
+```
+ 
+```{r}
+
+londoner_weights %>% 
+  group_by(group) %>% 
+  summarise(mean_weight = mean(weight),
+            var_weight = var(weight),
+            st_dev_weight = sd(weight),
+            st_dev_weight_long = sqrt(var_weight))
+
+```
+ 
+ weight = kg
+ variance = kg^2
+ 
+ standard deviation (sd) = sqrt(variance)
+ units = kg
+ 
+ The average deviance from the mean weight of commuters (68.5kg) was 4.6kg
+ 
+ Calculating variance longhand 
+ 
+ $$
+ s^2 = \frac{1}{n-1}\sum{(x - \bar{x})^2}
+ $$
+ 
+ Get the difference between each value and the mean, square each value, add up these squared values and divide by total number of values - 1
+ 
+ ...or
+ 
+ just use var()
+ 
+ sqrt the value you get for variance to calculate standard deviation
+ 
+### Task: 
+ 
+Calculate the standard deviation for the salaries in accounting and management at Tyrell Corp.
+ 
+Comment on the standard deviations.
+
+```{r}
+
+jobs %>% 
+  group_by(position) %>% 
+  summarise(mean_salary = mean(salary),
+            var_salary = var(salary),
+            sd_salary = sd(salary),
+            sd_percent = sd_salary / mean_salary)
+
+```
+
+The sd for accounting is small (only $2,400) which indicates the salary values
+are all pretty similar, i.e. grouped closely around the mean.
+
+Whereas for Management, the sd is a lot larger ($10,900) which states there is 
+bigger variance between the salaries and that the salaries tend to be a bit further away from the mean.
+
+# Common Distributions
+
+Discrete and Continuous Variables
+
+Numeric data - discrete / continuous
+Categorical data - nominal / ordinal (have an order)
+
+discrete = countable and finite
+continuous = uncountable
+
+Variables
+
+number of people in my survey who love the colour blue = discrete value
+the height of people in Scotland - continuous value
+
+age ==== continous numeric
+age group (child, adult, senior) === ordinal categoric
+number of people in household === discrete numeric
+height === continuous
+weight === continuous
+shoe size (uk) === ordinal categoric
+foot size === continuous numeric
+vegetarian === nominal categoric (binary)
+
+# Probability Mass and Probability Density Functions
+
+Discrete probability distribution is a probability distribution of a discrete variable
+
+heads or tails, discrete number of outcomes
+
+probability mass function -> probability distribution of a discrete variable
+
+probability density function -> probability distribution of a continuous variable
+
+(What is the probability of heights in the range from 174.22cm to 178.91cm in the dataset?)
+
+In the case of pmf vs pdf, while we can measure probabilities for specific discrete values of a pmf, we can't for pdf. We look instead at the probability of a range of values.
+
+Rules for probability distributions
+- outcome is our x axis
+- y is our probability of that outcome occurring (pmfs)
+- the sum of all probabilities must be 1
+- each probability must be between 0 and 1.
+
+Rules for continuous probability distributions
+- outcomes are still our x axis
+- y is probability function
+- the area under the pdf curve must be equal to 1
+- probabilities are the area under the curve bounded by an upper and lower value
+
+# Discrete Distributions
+
+Discrete uniform - all outcomes equally likely (same probability)
+
+# Cumulative Distribution Functions
+
+```{r}
+#cdf for rolling one die
+rolldie(1) %>% 
+  mutate(p = 1/n()) %>% 
+  mutate(F_x = cumsum(p)) %>% 
+  ggplot(aes(x = X1, y = F_x)) +
+  geom_step()
+
+```
+
+Getting individual probabilities from cdfs
+
+p(3) = F(3) - F(2) = 0.5 - 0.3333 = 0.16666....
+
+p(4) = F(4) - F(3) = 0.6667 - 0.5 = 0.16666....
+
+# Continuous Distributions
+
+continuous Uniform
+
+Lengths of "brain break" at CodeClan were monitored for a week. They were found
+to be distributed uniformly (equal p for all outcomes) between 5 mins and 22 mins.
+
+l is continuous
+l could be 7.182333, it could 5 mins, it could be 21.9 mins
+
+What will the probability density function look like for the random variable l?
+
+Useful distribution functions
+
+p - cumulative density function
+q - quantile
+r - random numbers
+d - distribution
+
+```{r}
+
+brain_breaks <- tibble(
+  length = seq(4, 23, 0.1),
+  f_length = dunif(x = length, min = 5, max = 22)
+)
+
+# probability density function (we're looking at a continuous var)
+brain_breaks %>% 
+  ggplot(aes(x = length, y = f_length)) +
+  geom_line()
+
+brain_breaks %>% 
+  mutate(F_length = punif(q = length, min = 5, max = 22)) %>% 
+  ggplot(aes(x = length, y = F_length)) +
+  geom_line()
+
+
+```
+
+What is the probability of a brain break lasting between 8.4 and 10.7 mins?
+
+```{r}
+
+f_10_7 <- punif(q = 10.7, min = 5, max = 22)
+f_8_4 <- punif(q = 8.4, min = 5, max = 22)
+
+f_10_7 - f_8_4
+
+```
+
+14% chance of seeing a brain break between 8.4 and 10.7 mins long.
+
+What does this look like on our initial plot
+
+```{r}
+
+brain_breaks %>% 
+  ggplot(aes(x = length, y = f_length)) +
+  geom_line() +
+  #add shading
+  geom_ribbon(aes(ymin = 0, ymax = ifelse(
+    length >= 8.4 & length <= 10.7, f_length, 0)),
+    fill = "red", alpha = 0.6
+  )
+
+
+```
+
+```{r}
+
+(10.7 - 8.4) * max(brain_breaks$f_length)
+
+```
+
+# Normal Distribution
+
+```{r}
+
+three_norms <- tibble(
+  x = seq(0, 100, 1),
+  f1_x = dnorm(x = x, mean = 50, sd = 1),
+  f2_x = dnorm(x = x, mean = 50, sd = 5),
+  f3_x = dnorm(x = x, mean = 50, sd = 10),
+)
+
+three_norms %>% 
+  ggplot() +
+  geom_line(aes(x = x, f1_x), col = "red") +
+  geom_line(aes(x = x, f2_x), col = "black") +
+  geom_line(aes(x = x, f3_x), col = "blue")
+
+```
+
+How can we tell if our data is normally distributed?
+
+qqplot (quantile quantile plots)
+various normality tests
+
+look at a normal distribution vs our data
+
+(fitting a normal distribution to our data set)
+
+Looking at just the accounting department, is the data normally distributed?
+
+```{r}
+
+accounting_position_stats <- jobs %>%
+  filter(position == "Accounting") %>% 
+  summarise(num = n(),
+            mean_sal = mean(salary),
+            st_dev_sal = sd(salary))
+
+accounting_position_stats
+
+```
+
+Overlaying a normal distribution:
+
+```{r}
+
+# 1. plot the histogram
+# 2. change the metric of the histogram with aes(y = ..density..)
+#3. use stat_function and pre_calculated stats to overlay a normal distribution
+
+
+jobs %>% 
+  filter(position == "Accounting") %>% 
+  ggplot(aes(salary)) +
+  geom_histogram(aes(y = ..density..)) +
+  stat_function(
+    fun = ~dnorm(., mean = accounting_position_stats$mean_sal,
+                sd = accounting_position_stats$st_dev_sal)
+  )
+
+```
+
+"Standard Normal"
+
+Standardised variable (tool to describe normal distributions)
+
+z of a value = (value - mean) / s
+
+Something that tells us how far away we are from the mean in units of standard deviation.
+
+Z = 1.3, then the value is 1.3 sd away from the mean value.
+z = 3 would be a value 3* sd away from the mean
+
+This is another definition of an outlier:
+
+- a value 1.5*IQR above Q3 or below Q1
+- any value with a z above or below 3
+
+```{r}
+
+management_scaled <- jobs %>% 
+  filter(position == "Management") %>% 
+  #scale automatically calculates z scores
+  mutate(z_salary = scale(salary)) %>% 
+  mutate(mean_sal = mean(salary))
+
+management_scaled
+
+management_scaled %>% 
+  filter(abs(z_salary) > 2)
+```
+
+Standard Normal 
+
+scaled so that mean = 0, sd = 1
+
+Shading the standard normal (in notes)
+
+The empirical 3-sigma rule
+
+```{r}
+
+shade_standard_normal <- function(shade_from, shade_to){
+  standard_normal <- tibble(
+    z = seq(from = -4, to = 4, by = 0.001),
+    f_z = dnorm(x = z)
+  )
+  standard_normal %>%
+    ggplot(aes(x = z, y = f_z)) +
+    geom_line() +
+    geom_ribbon(aes(ymin = 0, ymax = ifelse(z >= shade_from & z <= shade_to, f_z, 0)), fill = "red", alpha = 0.6)
+}
+
+shade_standard_normal(shade_from = -Inf, shade_to = 0)
+
+```
+
+Let's calculate how many values should lie within 1 standard distribution of the mean for a standard normal distribution.
+
+```{r}
+# one standard deviation above - one standard deviation below
+100 * (pnorm(q = 1) - pnorm(q = -1))
+
+```
+68% of our data should lie within 1sd of the mean.
+
+```{r}
+
+# two standard deviation above - two standard deviation below
+100 * (pnorm(q = 2) - pnorm(q = -2))
+shade_standard_normal(-2, 2)
+
+```
+
+This is called the empirical 3 sigma rule
+
+For data that is normally distributed we expect:
+68% values lie within 1 sd
+95% values lie within 2 sd
+99.7% values lie within 3 sd.

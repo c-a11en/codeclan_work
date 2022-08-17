@@ -1,0 +1,193 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+
+library(tidyverse)
+library(janitor)
+
+telco <- read_csv("data/telecomms_churn.csv") %>% 
+  clean_names()
+
+```
+
+These 7,043 represent the whole population (for purposes of this lesson)
+
+We can actually calculate the population parameters!
+We can't usually do this because we don't usually have the whole population.
+
+```{r}
+
+summary_popn <- telco %>% 
+  summarise(mean_monthly_charges = mean(monthly_charges),
+            means_tenure = mean(tenure),
+            prop_churn = sum(churn == "Yes") / n())
+
+```
+
+```{r}
+
+telco %>% 
+  ggplot(aes(x = monthly_charges)) +
+  geom_histogram(col = "white",
+                 fill = "steelblue",
+                 alpha = 0.7)
+
+```
+
+```{r}
+telco %>% 
+  ggplot(aes(x = tenure)) +
+  geom_histogram(col = "white",
+                 fill = "steelblue",
+                 alpha = 0.7)
+```
+
+```{r}
+telco %>% 
+  ggplot(aes(x = churn)) +
+  geom_bar(col = "white",
+           fill = "steelblue",
+           alpha = 0.7)
+```
+
+Let's start taking random samples - for the purposes of the lesson
+
+```{r}
+
+library(infer)
+
+```
+
+```{r}
+
+sample_200 <- telco %>% 
+  rep_sample_n(200, reps = 1) %>% 
+  ungroup()
+
+sample_200
+```
+
+
+```{r}
+
+summary_sample_200 <- sample_200 %>%
+  summarise(mean_monthly_charges = mean(monthly_charges),
+            means_tenure = mean(tenure),
+            prop_churn = sum(churn == "Yes") / n())
+
+summary_sample_200
+```
+
+
+```{r}
+
+errors <- summary_sample_200 - summary_popn
+errors
+```
+
+```{r}
+
+percent_error <- errors / summary_sample_200 * 100
+
+```
+
+```{r}
+
+resample_200 <- telco %>% 
+  rep_sample_n(200, reps = 5000) %>% 
+    summarise(mean_monthly_charges = mean(monthly_charges),
+            means_tenure = mean(tenure),
+            prop_churn = sum(churn == "Yes") / n())
+
+resample_200
+```
+
+```{r}
+
+monthly_charges_plot <- resample_200 %>%
+  ggplot() +
+  geom_histogram(aes(x = mean_monthly_charges),
+                 col = "white",
+                 fill = "steelblue",
+                 alpha = 0.7) +
+  labs(x = "mean monthly charges from each sample")
+
+monthly_charges_plot
+
+mean_tenures_plot <- resample_200 %>%
+  ggplot() +
+  geom_histogram(aes(x = means_tenure),
+                 col = "white",
+                 fill = "steelblue",
+                 alpha = 0.7) +
+    labs(x = "mean tenure from each sample")
+
+
+mean_tenures_plot
+
+mean_churn_plot <- resample_200 %>%
+  ggplot() +
+  geom_bar(aes(x = prop_churn),
+                 col = "white",
+                 fill = "steelblue",
+                 alpha = 0.7) +
+    labs(x = "mean tenure from each sample")
+
+mean_churn_plot
+```
+
+```{r}
+
+resample_200 %>% 
+  summarise(mean_mc = mean(mean_monthly_charges),
+            mean_ten = mean(means_tenure),
+            mean_churn = mean(prop_churn))
+
+```
+
+population:        64.76169	 32.37115	 0.2653699	
+sample (5000):     64.74961	 32.3889	 0.265038	
+
+```{r}
+
+std_errors <- resample_200 %>% 
+  summarise(se_mean_monthly_charges = sd(mean_monthly_charges),
+            se_means_tenure = sd(means_tenure),
+            se_prop_churn = sd(prop_churn))
+
+```
+
+Standard error will increase with reduced number of samples.
+
+```{r}
+
+library(fastGraph)
+
+shadeDist(
+  xshade = c(60, 70),
+  lower.tail = FALSE,
+  ddist = "dnorm",
+  parm1 = mean(resample_200$mean_monthly_charges),
+  parm2 = std_errors$se_mean_monthly_charges,
+  xlab = "mean_monthly_charges"
+)
+
+```
+
+```{r}
+
+shadeDist(
+  xshade = c(30, 35),
+  lower.tail = FALSE,
+  ddist = "dnorm",
+  parm1 = mean(resample_200$means_tenure),
+  parm2 = std_errors$se_means_tenure,
+  xlab = "mean_monthly_charges"
+)
+
+```
+

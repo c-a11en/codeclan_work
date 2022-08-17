@@ -1,0 +1,377 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+
+source("../prob.R")
+
+```
+
+```{r}
+
+s_two_dice <- rolldie(2)
+s_two_dice
+
+```
+
+```{r}
+
+s_two_dice %>% 
+  filter(X1 + X2 == 7)
+
+```
+
+```{r}
+
+s_two_dice <- s_two_dice %>% 
+  mutate(total = X1 + X2)
+
+s_two_dice
+```
+
+```{r}
+
+s_sum_equals_7 <- s_two_dice %>%
+  filter(total == 7)
+
+s_sum_equals_7
+
+```
+
+```{r}
+
+
+s_sum_gt_10 <- s_two_dice %>%
+  filter(total > 10)
+
+s_sum_gt_10
+
+```
+# Task
+
+```{r}
+# first die even
+first_die_even <- s_two_dice %>% 
+  filter(X1 %% 2 == 0)
+
+first_die_even
+```
+
+```{r}
+# die2 minus die 1 is -2
+die2_minus_die1 <- s_two_dice %>% 
+  filter(X2 - X1 == -2)
+
+die2_minus_die1
+
+```
+
+```{r}
+# die values differ by 2
+differ_by_two <- s_two_dice %>% 
+  filter(abs(X1 - X2) == 2)
+
+differ_by_two
+```
+
+# Counting rules
+
+## Single-step experiments
+
+```{r}
+
+s <- rolldie(2)
+
+total_seven <- s %>% 
+  filter(X1 + X2 == 7)
+
+total_seven
+```
+
+```{r}
+
+nrow(total_seven)/nrow(s)
+
+```
+
+## Multiple-step experiments
+
+Step 1: Rolling a dice - 6 possible outcomes
+Step 2: tossing a coin - 2 possible outcomes
+
+Probability of rolling a 6 and tossing a heads:
+P(6) = 1/6
+P(H) = 1/2
+
+
+```{r}
+
+s_die <- rolldie(1)
+s_coin <- tosscoin(1)
+
+s_total <- merge(s_die, s_coin)
+
+head_six <- s_total %>% 
+  filter(X1 == 6 & toss1 == "H")
+
+nrow(head_six) / nrow(s_total)
+```
+
+# Permutations and combinations
+
+##Permutation
+An arrangement of outcomes in which the _order matters_
+
+##Combination
+An arrangement where order _does not matter_
+
+# Task - choose 3 roles for 10 employees 
+
+```{r}
+
+library(gtools)
+
+```
+
+```{r}
+
+nrow(permutations(10, 4, repeats.allowed = FALSE))
+
+```
+
+```{r}
+
+employees <- c("Alice", "Bob", "Carole", "David", "Elaine", "Fred", "Gabra", "Hua", "Inigo", "Hugo")
+
+seniors <- as_tibble(permutations(n = 10, r = 3, v = employees))
+
+seniors <- seniors %>% 
+  rename(CEO = V1, CTO = V2, COO = V3)
+
+seniors
+```
+
+```{r}
+
+seniors %>% 
+  group_by(CEO, CTO) %>% 
+  filter(CEO == "Alice" & CTO == "Bob") %>% 
+  summarise(probability = n()/nrow(seniors))
+
+```
+
+## Combinations
+
+```{r}
+
+num_draws <- choose(50, 6)
+num_draws
+
+1/num_draws
+```
+
+# Task
+
+Use the combinations() function in gtools for this task (don’t try to do it manually). I have five flavours of ice cream to choose from:
+
+flavours <- c("vanilla", "chocolate", "raspberry", "strawberry", "pistachio")
+and a bowl that can hold three scoops.
+
+How many different variations in bowls of ice cream can I have assuming:
+
+- Each scoop must be a different flavour
+
+```{r}
+
+flavours <- c("vanilla", "chocolate", "raspberry", "strawberry", "pistachio")
+
+comb <- combinations(5, 3, v = flavours, repeats.allowed = F)
+num_comb <- nrow(comb)
+num_comb
+
+```
+
+- I can repeat flavours if I wish?
+
+```{r}
+
+comb <- combinations(5, 3, v = flavours, repeats.allowed = T)
+num_comb <- nrow(comb)
+num_comb
+
+```
+
+
+
+```{r}
+s_four_coins <- tosscoin(4)
+
+s_four_coins <- s_four_coins %>% 
+  mutate(num_heads = rowSums(. == "H"))
+
+```
+
+P(2 heads)
+
+```{r}
+
+s_at_least_2_heads <- s_four_coins %>% 
+  filter(num_heads >= 2)
+
+#P = 2+ heads
+prob_two_heads <- nrow(s_at_least_2_heads) / nrow(s_four_coins)
+
+prob_two_heads
+1 - prob_two_heads
+
+```
+
+## "And" combinations
+
+event A: {1,2,3,4}
+event B: {3,4,5,6}
+
+```{r}
+
+rolldie(2) %>% 
+  filter(X1 %in% 3:4, X2 %in% 3:4)
+
+```
+
+
+Probability of more than 1 H and 1 T in four coin flips
+```{r}
+
+s_four_coins %>% 
+  mutate(num_tails = rowSums(. == "T")) %>%  
+  filter(num_heads >= 1 & num_tails >= 1) %>% 
+  summarise(prob = n()/nrow(s_four_coins))
+
+```
+
+## Mutually exclusive events
+
+```{r}
+
+s_four_coins %>% 
+  mutate(num_tails = rowSums(. == "T")) %>%  
+  filter(num_heads >= 3 | num_tails >= 2) %>% 
+  summarise(prob = n()/nrow(s_four_coins))
+
+
+```
+
+## OR combination
+
+>union
+
+event A: roll an even number: {2,4,6}
+event B: roll one of {4,5}
+
+```{r}
+
+s_two_dice <- rolldie(2)
+
+s_two_dice %>% 
+  filter(X1 %% 2 == 0 | X2 == 5) %>% 
+  summarise(prob= n()/nrow(s_two_dice))
+
+```
+
+# Task
+
+```{r}
+
+s_two_dice <- rolldie(2)
+
+#first die is even
+prob_X1_even <- s_two_dice %>% 
+  filter(X1 %% 2 == 0) %>% 
+  summarise(prob = n() / nrow(s_two_dice))
+
+#second die is 5
+prob_X2_5 <- s_two_dice %>% 
+  filter(X2 == 5) %>% 
+  summarise(prob = n() / nrow(s_two_dice))
+
+# first die is even AND second die is 5
+prob_X1_even_and_X2_5 <- s_two_dice %>% 
+  filter(X1 %% 2 == 0 & X2 == 5) %>% 
+  summarise(prob = n() / nrow(s_two_dice))
+
+# first die is even OR second die is 5
+prob_X1_even_or_X2_5 <- prob_X1_even + prob_X2_5 - prob_X1_even_and_X2_5
+
+prob_X1_even_or_X2_5
+
+```
+
+# Conditional probability
+
+```{r}
+library(janitor)
+cb <- read_csv("data/colour_blindness.csv")
+
+```
+
+```{r}
+cb %>% 
+  tabyl(bio_sex, cblind) %>% 
+  adorn_totals(where = c("row", "col"))
+
+cb %>% 
+  tabyl(bio_sex, cblind) %>% 
+  adorn_percentages(denominator = "all") %>% 
+  adorn_title()
+
+```
+
+```{r}
+
+prob_female <- cb %>% 
+  summarise(prob = sum(bio_sex == "female") / n())
+
+prob_female
+```
+
+# Task - marginal probabilities
+
+```{r}
+# being male
+prob_male <- cb %>% 
+  summarise(prob = sum(bio_sex == "male") / n())
+
+prob_male
+
+#colour blind
+prob_cb <- cb %>% 
+  summarise(prob = sum(cblind) / n())
+
+prob_cb
+
+# not colour blind
+prob_not_cb <- cb %>% 
+  summarise(prob = sum(cblind == FALSE) / n())
+
+prob_not_cb
+
+```
+
+```{r}
+
+prob_female_cb <- cb %>% 
+  filter(bio_sex == "female" & cblind) %>% 
+  summarise(prob = n() / nrow(cb))
+
+prob_female_cb
+
+prob_male_cb <- cb %>% 
+  filter(bio_sex == "male" & cblind) %>% 
+  summarise(prob = n() / nrow(cb))
+
+prob_male_cb
+```
+
