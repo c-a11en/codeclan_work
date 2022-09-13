@@ -1,0 +1,153 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+
+height <- c(176, 164, 181, 168, 195, 185, 166, 180, 188, 174)
+weight <- c(82, 65, 85, 76, 90, 92, 68, 83, 94, 74)
+
+```
+
+```{r}
+
+
+library(tidyverse)
+
+sample <- tibble(
+  weight,
+  height
+)
+```
+
+```{r}
+
+sample %>% 
+  ggplot(aes(x = weight, y = height)) +
+  geom_point()
+
+```
+
+```{r}
+
+line <- function(x, b0, b1) {
+  
+  return(b0 + x * b1)
+  
+}
+
+```
+
+```{r}
+
+b0 <- 95
+b1 = 1
+
+
+
+sample <- sample %>% 
+  mutate(fitted_height = line(x = weight,
+                              b0 = b0,
+                              b1 = b1))
+
+sample %>% 
+  ggplot(aes(x = weight, y = height)) +
+  geom_point() +
+  geom_point(aes(y = fitted_height), shape = 1) +
+  geom_abline(slope = b1, intercept = b0, col = "red") +
+  geom_segment(aes(xend = weight, yend = fitted_height),
+               alpha = 0.5)
+
+```
+
+```{r}
+
+sample <- sample %>% 
+  mutate(residual = height - fitted_height)
+
+sample %>% 
+  summarise(sum_residuals = sum(residual))
+  
+```
+
+```{r}
+
+sample <- sample %>% 
+  mutate(sq_residual = residual ^ 2)
+
+sample 
+  
+```
+
+```{r}
+
+sample %>% 
+  summarise(sum_sq_resid = sum(sq_residual))
+
+```
+
+```{r}
+
+model <- lm(formula = height ~ weight, # model of height using weight
+            data = sample)
+
+model
+
+```
+
+```{r}
+# fitted values for model estimate, (y hat)
+fitted(model)
+
+```
+
+```{r}
+
+model %>% 
+  predict(newdata = data.frame(weight = c(78)))
+
+```
+
+```{r}
+
+library(modelr)
+library(broom)
+
+```
+
+```{r}
+
+sample <- sample %>% 
+  select(-c(fitted_height, residual, sq_residual)) %>% 
+  add_predictions(model) %>%
+  add_residuals(model)
+
+sample
+
+```
+
+```{r}
+
+sample %>% 
+  ggplot(aes(x = weight)) +
+  geom_point(aes(y = height)) +
+  geom_line(aes(y = pred), col = "red")
+
+```
+
+```{r}
+
+weights_predict <- tibble(
+  
+  weight = 50:120
+  
+)
+
+weights_predict %>% 
+  add_predictions(model)
+
+```
+

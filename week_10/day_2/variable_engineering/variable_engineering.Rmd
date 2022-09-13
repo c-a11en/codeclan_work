@@ -1,0 +1,247 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(fastDummies)
+
+```
+
+```{r}
+
+grades <- read.csv("data/grades.csv")
+
+grades
+
+```
+
+# Variable Engineering
+
+By variable, I mean a column in a dataset
+
+## Missing Values
+
+- keep (may no longer be an option for some modelling)
+- drop
+- impute (replace with something meaningful)
+
+Is there a way we can model a student's final grade?
+
+y = final
+
+```{r}
+# check for missing values
+summary(grades)
+
+# 1 missing value in take_home and 3 missing values in final
+```
+
+Task - 5 mins
+Replace the NA values in our dataset by imputing the mean value of the appropriate columns. Refer to the summary above to see which columns need work.
+
+```{r}
+
+grades <- grades %>% 
+  mutate(across(.cols = c(take_home, final),
+                .fns = ~coalesce(., mean(., na.rm = TRUE))))
+
+```
+
+```{r}
+# check if missing values have been removed
+summary(grades)
+
+
+# SUCCESS!
+```
+
+## Dealing with outliers
+
+- don't be hasty to drop data that looks like it doesn't fit in with the rest and be sure to justify the removal of outliers.
+
+## Transformations
+
+- China and India have massive populations. So when plotting all the countries and colouring in based on population we only saw two groups. 
+
+When we've got very skewed data, one strategy is to transform the variable:
+
+Usually using the variable itself.
+
+So we can reduce the effect of skew by: taking exponents or logarithms for left / right skew respectively.
+
+Can also square or sqrt.
+
+A way to convert non-linear relationships into linear relationships.
+
+## Categorical Data in a Model
+
+Convert into a wide format where each categorical level is a variable
+
+(we turn into switches)
+
+if maths is switched on, what will the final grade be?
+if english is switched on, what will the final grade be?
+
+y = slope for maths * maths + intercept
+
+(upcoming in the next lesson = parallel slopes model)
+
+-> Creating Dummy Variables
+
+```{r}
+
+grades %>% 
+  distinct(subject)
+
+```
+
+```{r}
+
+grades_dummy <- grades %>% 
+  pivot_wider(names_from = subject, values_from = subject) %>% 
+  mutate(across(c(english:biology), .fns = ~if_else(is.na(.), 0, 1))) 
+
+grades_dummy
+
+```
+
+If maths, physics, french and biologiy are 0, we know english must be 1.
+
+Dummy Variable Trap
+
+We don't want to have the same information in our model twice.
+
+variable that should have a weight of "1", a weight of "2"
+
+(mutlicolinearity, having a copy of a variable in a model)
+
+
+ice_cream = slope * temperature, slop * avg_temperature_fahrenheit + intercept
+
+To avoid this, remove one variable:
+
+```{r}
+
+grades_dummy < grades_dummy %>% 
+  select(-biology)
+
+```
+
+How we'd actually do dumy variables:
+
+1. In R, we wouldn't (R does dummies automatically when using 'lm' or 'glm')
+
+```{r}
+# proof that R calculates dummy variables
+lm(Sepal.Length ~ ., iris)
+
+```
+
+```{r}
+
+grades_dummies <- grades %>% 
+  fastDummies::dummy_cols(
+    select_columns = "subject",
+    remove_first_dummy = TRUE, # to avoid multicolinearity / the dummy variable trap
+    remove_selected_columns = TRUE
+  )
+
+grades_dummies
+
+```
+
+For low frequency categories it might be more useful to group these into a single group and model as a larger group of variables with low frquency.
+
+## Binning
+
+Sometimes, it's useful to group together continuous predictors
+
+```{r}
+
+grades %>% 
+  distinct(midterm) %>% 
+  nrow()
+
+```
+
+-> grade category (the letter grade)
+
+\> 70 = A
+\> 60 = B
+\> 50 = C
+
+```{r}
+
+grades %>% 
+  mutate(letter_grade = case_when(
+    midterm >= 70 ~ "A",
+    midterm >= 60 ~ "B",
+    midterm >= 50 ~ "C",
+    TRUE ~ "F"
+  ))
+
+# then we'd dummy these as well
+
+```
+
+Sometimes we want to reduce the granularity. in these cases we'd group together observations into bins.
+
+## Deriving Variables
+
+We call the initial data variables when we load them in: raw variables
+
+Any columns we create are "derived variables". These can be super useful.
+
+Perhaps BMI is a better predictor of someone's age than either there height or weight.
+
+
+## Scaling Variables
+
+Models don't care about the units, or context, it only cares about the values.
+
+To bring our values onto a similar scale, we could scale them:
+- standardisation (follows standard normal distribution, mean = 0, sd = 1)
+- normalisation (follows normal distribution)
+
+This isn't particularly model_breaking for linear regression.
+
+Our baseline
+Our predictor is 0, this is our response.
+
+When standardised
+Our predictor is at it's mean, this is our response.
+
+```{r}
+
+library(ggfortify)
+
+model_baseline <- lm(final ~ ., grades)
+
+autoplot(model_baseline)
+
+grades_scaled <- grades %>% 
+  mutate(across(where(is.numeric), scale))
+
+model_scaled <- lm(final ~ ., grades_scaled)
+
+autoplot(model_scaled)
+  
+
+```
+
+```{r}
+
+summary(model_baseline)
+
+```
+
+```{r}
+
+summary(model_scaled)
+
+```
+
+
