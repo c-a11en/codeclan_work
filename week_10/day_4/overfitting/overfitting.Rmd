@@ -1,0 +1,263 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(rlang)
+library(tidyverse)
+library(caret)
+library(modelr)
+
+```
+
+
+```{r}
+
+savings <- CodeClanData::savings
+
+savings
+
+```
+
+```{r}
+
+model_overfit <- lm(savings ~ ., savings)
+
+plot(model_overfit)
+
+summary(model_overfit)
+
+```
+
+```{r}
+
+model_wellfit <- lm(savings ~ salary + age + retired,
+                    savings)
+
+plot(model_wellfit)
+
+summary(model_wellfit)
+
+```
+
+```{r}
+
+model_underfit <- lm(savings ~ salary, savings)
+plot(model_underfit)
+summary(model_underfit)
+
+```
+
+## Parsimony
+
+Goodness of Fit: GoF
+
+R2
+adj R2
+
+AIC - Akaike Information Criterion
+
+BIC - Bayesian Information Criterion
+
+Not really GoF measures
+really they are relative GoF measures
+Used for comparing models
+
+BIC penalises more strongly
+ - means you tend towards smaller models
+ 
+R2: larger = better
+*IC smaller = better
+
+-1000 > -1 > 1
+
+```{r}
+# pull out adjusted r squared values 
+summary(model_overfit)$adj.r.squared
+summary(model_wellfit)$adj.r.squared
+summary(model_underfit)$adj.r.squared
+
+AIC(model_overfit)
+AIC(model_wellfit)
+AIC(model_underfit)
+
+BIC(model_overfit)
+BIC(model_wellfit)
+BIC(model_underfit)
+
+```
+
+```{r}
+
+summary(model_overfit)
+
+broom::glance(model_overfit)
+broom::tidy(model_overfit)
+
+```
+
+## Test / train sets
+
+_split data before we look at it_
+
+- ok to go through _basic_ cleaning steps
+- but don't explore for patterns or relationships at this point
+
+Create a test set - used to test the model on "unseen" data
+Separate from training set
+Don't refer to it ever again until the model is built
+
+The remaining data is our _training_ data
+
+We want to use as much of the data as possible for the training phase
+
+90 / 10 - split
+80 / 20 - split
+70 / 30 - split
+
+```{r}
+
+set.seed(9)
+
+n_data <- nrow(savings)
+
+test_index <- sample(1:n_data, size = n_data * 0.2)
+
+test <- slice(savings, test_index)
+train <- slice(savings, -test_index)
+
+```
+
+### Fit a model to the training data set
+
+```{r}
+
+model <- lm(savings ~ salary + age + retired, train)
+GGally::autoplot(model)
+
+```
+
+```{r}
+
+predictions_test <- test %>% 
+  add_predictions(model) %>% 
+  select(savings, pred)
+
+predictions_test
+
+```
+
+```{r}
+
+mse_test <- mean((predictions_test$pred - test$savings)^2)
+mse_test # normally this will be rooted -> RMSE
+
+sqrt(mse_test)
+
+```
+
+```{r}
+
+test %>% 
+  add_residuals(model) %>% 
+  mutate(squared_error = resid^2) %>% 
+  summarise(mse = mean(squared_error))
+
+```
+# Task 
+
+```{r}
+
+mse_train <- train %>% 
+  add_residuals(model) %>% 
+  mutate(squared_error = resid^2) %>% 
+  summarise(mse = mean(squared_error))
+
+mse_train
+
+```
+
+## K-fold validation
+
+Bias - variance trade-off
+
+A model with high bias won't match the data set closely,
+while a model with low bias will match the data set more closely.
+
+Hyperparameters
+
+```{r}
+
+cv_10_fold <- trainControl(method = "cv",
+                           number = 10, 
+                           savePredictions = TRUE)
+
+model <- train(savings ~ salary + age + retired, 
+               savings,
+               trControl = cv_10_fold,
+               method = "lm")
+
+```
+
+```{r}
+
+model$pred
+
+```
+
+```{r}
+
+model$resample
+
+```
+
+```{r}
+
+mean(model$resample$RMSE)
+mean(model$resample$Rsquared)
+
+```
+# Task
+
+```{r}
+
+cv_10_fold <- trainControl(method = "cv",
+                           number = 10, 
+                           savePredictions = TRUE)
+
+model_all <- train(savings ~ ., 
+               savings,
+               trControl = cv_10_fold,
+               method = "lm")
+
+model_all$resample %>% 
+  summarise(mean_error = mean(RMSE),
+            mean_r_squared = mean(Rsquared))
+
+```
+
+## Test, Training and Validation sets
+
+20 / 80 
+20 / 60 / 20
+
+Hyperparameters - "model settings"
+
+data
+some model --- lots of different types of model
+fit several models with varying hyperparameters
+use the validation set to choose our hyperparameters
+re-train model on entire training set (60 + 20)
+test on test set
+
+## Avoiding leaks
+
+- might be ok looking for some correlations
+- how do we handle NAs?
+
+if you impute before you split 
+Realise the imputed values in the test set have been influence by the training set
+
+impute values independently between test and training data set.
+

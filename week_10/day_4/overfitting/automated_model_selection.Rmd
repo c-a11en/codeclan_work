@@ -1,0 +1,215 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(leaps)
+#library(glmulti)
+
+insurance <- CodeClanData::insurance
+
+insurance
+```
+
+## Forward selection
+
+Start with a "NULL" model
+  - intercept only
+at each step check all predictors 
+find the one that raises adjusted r squared the most
+add that pred to the model
+
+1 prestige ~ education
+2 prestige ~ education + income
+3 prestige ~ education + income + type
+4 prestige ~ education + income + type + income:type
+
+## Backward selection
+
+Start with a "Full" model
+remove preds sequentially see which lowers the adj R2 the elast
+  - remove from the model
+
+## Best subset selection
+
+find all possible combos
+keep the one with the best metric
+
+_options increase exponentially_
+very computationally intensive
+
+## Leaps package
+
+Limitations:
+- it will happily include only some levels of a categorical variable
+- it does not handle interactions very well
+- we can only test model fit using penalised measures of fit, not using test/train splits or a k-fold cross validation
+
+```{r}
+
+insurance
+
+```
+
+```{r}
+
+regsubsets_forward <- regsubsets(charges ~ .,
+                                 data = insurance,
+                                 nvmax = 8,
+                                 method = "forward")
+
+sum_regsubsets_forward <- summary(regsubsets_forward)
+```
+
+```{r}
+sum_regsubsets_forward$which
+
+```
+
+```{r}
+
+plot(regsubsets_forward, scale = "adjr2")
+
+```
+
+```{r}
+
+plot(regsubsets_forward, scale = "bic")
+
+```
+
+```{r}
+
+plot(sum_regsubsets_forward$rsq, type = "o", pch = 20)
+plot(sum_regsubsets_forward$bic, type = "o", pch = 20)
+
+```
+
+
+```{r}
+
+
+regsubsets_backward <- regsubsets(charges ~ .,
+                                 data = insurance,
+                                 nvmax = 8,
+                                 method = "backward")
+
+sum_regsubsets_backward <- summary(regsubsets_backward)
+
+
+```
+
+
+```{r}
+
+regsubsets_exhaustive <- regsubsets(charges ~ .,
+                                 data = insurance,
+                                 nvmax = 8,
+                                 method = "exhaustive")
+
+sum_regsubsets_exhaustive <- summary(regsubsets_exhaustive)
+
+```
+
+
+
+```{r}
+
+plot(regsubsets_backward, scale = "bic")
+plot(regsubsets_exhaustive, scale = "bic")
+
+plot(regsubsets_backward, scale = "adjr2")
+plot(regsubsets_exhaustive, scale = "adjr2")
+
+
+plot(sum_regsubsets_backward$adjr2, type = "o", pch = 20)
+plot(sum_regsubsets_exhaustive$adjr2, type = "o", pch = 20)
+
+# all methods return the same model results.
+
+```
+
+
+```{r}
+
+summary(regsubsets_exhaustive)$which[6, ]
+
+```
+
+```{r}
+
+mod_without_region <- lm(charges ~ age + bmi + children + smoker,
+                         insurance)
+
+summary(mod_without_region)
+
+```
+
+```{r}
+
+mod_with_region <- lm(charges ~ age + bmi + children + smoker + region,
+                         insurance)
+
+summary(mod_with_region)
+
+```
+
+```{r}
+
+anova(mod_without_region, mod_with_region)
+
+```
+
+```{r}
+
+insurance <- insurance %>% 
+  mutate(location = substr(region, 1, 5))
+
+```
+
+```{r}
+
+mod_region_comb <- lm(formula = charges ~ age + bmi + children + smoker + location, 
+    data = insurance)
+
+summary(mod_region_comb)
+
+```
+
+```{r}
+
+anova(mod_without_region, mod_region_comb)
+
+```
+
+
+```{r}
+
+par(mfrow = c(2,2))
+plot(mod_without_region)
+plot(mod_with_region)
+plot(mod_region_comb)
+
+```
+
+# Task
+
+Extract and analyse the 4 predictor model
+
+```{r}
+summary(regsubsets_exhaustive)$which[4, ]
+
+```
+
+```{r}
+
+model_4predictors <- lm(charges ~ age + bmi + children + smoker,
+                        data = insurance)
+
+summary(model_4predictors)
+plot(model_4predictors)
+
+```
+

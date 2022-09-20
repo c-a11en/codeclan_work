@@ -1,0 +1,286 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(car)
+library(modelr)
+library(skimr)
+library(GGally)
+library(ggfortify)
+
+```
+
+```{r}
+
+prestige <- Prestige
+
+skim(prestige)
+
+```
+
+```{r}
+
+prestige_trim <- prestige %>% 
+  drop_na() %>% 
+  select(-census)
+
+dim(prestige_trim)
+
+```
+
+Feature Engineering / variable transformation: logged positively skewed numerics
+
+```{r}
+
+prestige_trim <- prestige_trim %>% 
+  mutate(ln_women = log(1 + women),
+         ln_income = log(income))
+
+skim(prestige_trim)
+
+```
+
+```{r}
+
+prestige_trim %>% 
+  select(prestige, everything(), -starts_with("ln")) %>% 
+  ggpairs(aes(colour = type, alpha = 0.5),
+          progress = FALSE)
+
+```
+
+```{r}
+
+prestige_trim %>% 
+  select(prestige, starts_with("ln"), type) %>% 
+  ggpairs(aes(colour = type, alpha = 0.5),
+          progress = FALSE)
+
+```
+
+
+Start building our model: best predictor first
+
+```{r}
+
+mod1a <- lm(prestige ~ education,
+            prestige_trim)
+
+summary(mod1a)
+
+```
+
+```{r}
+
+autoplot(mod1a)
+
+```
+
+
+```{r}
+
+mod1b <- lm(prestige ~ type,
+            prestige_trim)
+
+```
+
+```{r}
+
+summary(mod1b)
+
+autoplot(mod1b)
+
+```
+
+Although both models are good and viable, one is better (r2), so we choose education as our first variable.
+
+Now we want to see which variables describe the "residue", the unexplained model error.
+
+```{r}
+
+prestige_resid <- prestige_trim %>% 
+  add_residuals(mod1a) %>% 
+  select(resid, everything(), -c(prestige, education))
+
+prestige_resid %>% 
+  ggpairs(aes(color = type, alpha = 0.5),
+          progress = FALSE)
+
+```
+
+Add second predictor: next best
+i.e. the one that explains the most residual error
+
+```{r}
+
+mod2a <- lm(prestige ~ education + ln_income,
+            data = prestige_trim)
+
+summary(mod2a)
+autoplot(mod2a)
+
+```
+
+```{r}
+
+mod2b <- lm(prestige ~ education + income,
+            prestige_trim)
+
+summary(mod2b)
+
+```
+
+```{r}
+
+mod2c <- lm(prestige ~ education + type,
+            prestige_trim)
+
+summary(mod2c)
+
+```
+
+Model 2a gave the biggest uplift in r squared, residuals look great - add in to model
+
+Check for significance of categorical: ANOVA test
+(Analysis of Variation)
+
+```{r}
+
+anova(mod1a, mod2c)
+
+```
+
+p-value is significant (i.e. the 3-levels have different means) therefore we can include the categorical variable in our analysis.
+
+Third predictor
+
+```{r}
+
+prestige_resid <- prestige_trim %>% 
+  add_residuals(mod2a) %>% 
+  select(resid, everything(), -c(prestige, education, ln_income))
+
+prestige_resid %>% 
+  ggpairs(aes(colour = type, alpha = 0.5),
+          progress = FALSE)
+
+```
+
+```{r}
+
+mod3a <- lm(prestige ~ education + ln_income + women,
+            prestige_trim)
+
+summary(mod3a)
+
+```
+
+```{r}
+
+mod3b <- lm(prestige ~ education + ln_income + type,
+            prestige_trim)
+
+summary(mod3b)
+autoplot(mod3b)
+
+```
+
+```{r}
+
+anova(mod2a, mod3b)
+
+```
+
+diagnostic plots are fine, anova test is significant, let's add type to the model.
+
+Interactions (between existing main effects)
+
+```{r}
+
+prestige_resid <- prestige_trim %>% 
+  add_residuals(mod3b) %>% 
+  select(-prestige)
+
+```
+
+```{r}
+
+coplot(resid ~ ln_income | education, 
+       panel = function(x, y, ...) {
+         points(x, y)
+         abline(lm(y~x), col = "blue")
+       },
+       prestige_resid,
+       rows = 1)
+
+```
+
+```{r}
+
+prestige_resid %>% 
+  ggplot(aes(x = education, y = resid, colour = type)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+```
+
+```{r}
+
+prestige_resid %>% 
+  ggplot(aes(x = ln_income, y = resid, colour = type)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+```
+
+```{r}
+
+mod4a <- lm(prestige ~ education + ln_income + type + education:ln_income, 
+            prestige_trim)
+
+summary(mod4a)
+
+```
+
+```{r}
+
+mod4b <- lm(prestige ~ education + ln_income + type + education:type, 
+            prestige_trim)
+
+summary(mod4b)
+
+```
+
+```{r}
+
+mod4c <- lm(prestige ~ education + ln_income + type + ln_income:type, 
+            prestige_trim)
+
+summary(mod4c)
+
+```
+
+```{r}
+
+autoplot(mod4c)
+
+```
+
+```{r}
+
+anova(mod3b, mod4c)
+
+```
+
+```{r}
+
+library(relaimpo)
+
+calc.relimp(mod3b, type = "lmg", rela = TRUE)
+
+```
+
