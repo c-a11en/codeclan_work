@@ -1,0 +1,434 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+
+```
+
+```{r}
+
+
+student_results <- tibble(
+  time_spent_studying = c(1.5, 1, 2.2, 1.2, 4.6, 5.0, 2.6, 2.5, 4, 3.2, 0.5, 0.8, 1.8, 4.5, 3.8, 2.8, 4.2, 3, 3.5, 0.2),
+  pass = c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE)
+)
+
+logistic_model <- glm(pass ~ time_spent_studying, family = binomial(), student_results)
+
+
+ggplot(student_results, aes(time_spent_studying, pass)) +
+  geom_point()
+
+```
+
+Why doesn't linear regression work for this data, exactly?
+
+Can predict outside of the range
+High error
+
+Instead a fit we might want would
+
+predict a probability of pass / fail (always be between 0 and 1)
+would closely align with data points
+
+- How on earth do we make a line do this?
+
+We need to talk about Odds
+
+Odds is a ratio of success : failure
+
+odds of tossing a coin and getting a head
+
+1 success (head)
+
+1 failure (tail)
+
+odds 1:1
+
+Task - 2 mins
+If we roll a fair die, what are the odds of getting a 6?
+
+1 : 5
+
+```{r}
+
+mortgage_data <- read_csv("data/mortgage_applications.csv") %>% 
+  janitor::clean_names()
+
+mortgage_data
+
+```
+
+```{r}
+
+mortgage_data %>% 
+  ggplot(aes(x = tu_score, y = accepted)) +
+  geom_col()
+  
+```
+
+logistic equation
+
+```{r}
+
+log_eq <- function(x, intercept, constant) {
+  
+  return(1 / (1 + exp(intercept + constant*x)))
+  
+}
+
+
+x <- 1:10
+log_eq(x, 0.1, 0.5)
+
+```
+
+```{r}
+
+logit <- function (x) {
+  
+  return(log(x / (1 - x)))
+}
+
+logit_data <- tibble(p = seq(0.001, 0.999, 0.001)) %>% 
+  mutate(logit_p = logit(p))
+
+
+head(logit_data)
+
+```
+
+```{r}
+
+logit_data %>% 
+  ggplot(aes(y = p, x = logit_p)) +
+  geom_line() +
+  labs(x = "logit(p) value",
+       y = "probability")
+
+```
+
+```{r}
+
+mortgage_data
+
+```
+
+glm = generalised linear model, has exponent included somewhere in the model
+
+```{r}
+
+mortgage_data_logreg_model <- glm(accepted ~ tu_score,
+                                  mortgage_data,
+                                  family = binomial(link = "logit"))
+
+summary(mortgage_data_logreg_model)
+
+```
+
+$p = 1 / (1 + e^{-4.6 + 0.01x})$
+
+
+```{r}
+
+library(modelr)
+
+
+# 0 to 710 are the options for credit score
+
+
+# map a prediction of accepted or not for each credit score and employment status
+log_predictions <- tibble(
+  tu_score = rep(seq(0, 710, 1), 2),
+  employed = c(rep(TRUE, 711), rep(FALSE, 711))
+) %>% 
+  add_predictions(mortgage_data_logreg_model,
+                  type = "response")
+
+ggplot(mortgage_data) +
+  geom_jitter(aes(x = tu_score, y = as.numeric(accepted)), alpha = 0.5,
+              height = 0.1, width = 0.1) +
+  geom_line(data = log_predictions, aes(x = tu_score, y = pred),
+            col = "red") +
+  labs(y = "Estimated p(accepted)")
+
+
+# can use our prediction by filtering our prediction table
+log_predictions %>% 
+  filter(tu_score == 600)
+
+```
+
+How do our odds of getting accepted for a mortgage change as we increase tu_score?
+
+Odds at a baseline level (tu_score = 594)
+odds at a bit above the baseline level (tu_Score + 50)
+
+how does increasing our tu_score (credit score) by 50 affect our odds?
+
+```{r}
+
+odds_change <- function(b1, change){
+  
+  exp(b1 * change)
+  
+}
+
+odds_change(0.008475, 50)
+
+```
+
+a 50 unit increase in tu_score increases our odds by a factor of 1.53
+
+Next is categorical predictors
+
+```{r}
+
+mortgage_model_2_terms <- glm(
+  accepted ~ tu_score + employed,
+  mortgage_data,
+  family = binomial(link = "logit")
+)
+
+summary(mortgage_model_2_terms)
+
+```
+
+ln(Odds(Accepted)) = -4.6868275 +  0.0067239 * tu_score + 1.4845379 * employedTrue
+
+```{r}
+
+log_predictions <- tibble(
+  tu_score = rep(seq(0, 710, 1), 2),
+  employed = c(rep(TRUE, 711), rep(FALSE, 711))
+) %>% 
+  add_predictions(mortgage_model_2_terms,
+                  type = "response")
+
+ggplot(mortgage_data) +
+  geom_jitter(aes(x = tu_score, y = as.numeric(accepted)), alpha = 0.5,
+              height = 0.1, width = 0.1) +
+  geom_line(data = log_predictions, aes(x = tu_score, y = pred,
+                                        col = employed)) +
+  labs(y = "Estimated p(accepted)")
+
+log_predictions %>% 
+  filter(tu_score == 600)
+
+
+```
+
+Interpretation of categorical predictors:
+
+Again we look at compared to our reference level
+
+odds(employed = TRUE) / odds(employed = FALSE) = odds ratio
+
+```{r}
+
+odds_change(1.48, 1)
+
+```
+
+On average, a customer's odds of being accepted for a mortgage are 4.39 times higher if they are employed.
+
+## Model Performance: Building a Binary Classifier
+
+Rather than know the equation of a squiggle and how increasing / decreasing your credit score / employment status affected the probability you'd be accepted for a mortgage ....
+
+A model that assigns a class based on this predicted probability
+
+If applicant approaches our bank asking for a mortgage, if their credit score is X and their employment is Y, will we accept them for a loan or not.
+
+The probability level at which we assign yes or no is called the threshold.
+
+So for a 0.6 threshold, if the predicted probability of being accepted is greater than 0.6 --> accepted
+
+
+```{r}
+
+mortgage_pred_2_terms <- mortgage_data %>% 
+  # add predicted probabilities from the log model
+  add_predictions(mortgage_model_2_terms, 
+                  type = "response") %>% 
+  # this is the binary classifier step
+  mutate(predicted_accepted = pred >= 0.6)
+  
+
+```
+
+Model Assessment - How often did we get it right?
+
+1 Quick assessment tool: the Confusion Matrix
+The matrix outputs where the model is "confused", i.e. not correctly classifying
+
+```{r}
+
+library(janitor)
+
+mortgage_pred_2_terms %>% 
+  tabyl(accepted, predicted_accepted) %>% 
+  adorn_title()
+
+```
+
+Task - 5 mins - Preparation
+
+Load and clean the names of mortgage_applications.csv.
+Re-run the logistic regression on the dataset, again treating the tu_score, age and employed variables as predictors and the accepted variable as the binary dependent.
+Keep the model object (call it mortgage_3pred_model) and use it to predict estimated probabilities for the sample data using add_predictions() (call this mortage_data_with_3pred)
+Look as the head() of the data with predicted probabilities.
+
+```{r}
+
+mortgage_3pred_model <- glm(
+  accepted ~ tu_score + employed + age,
+  mortgage_data,
+  family = binomial(link = "logit")
+)
+
+summary(mortgage_3pred_model)
+
+mortgage_data_with_3pred <- mortgage_data %>% 
+  # add predicted probabilities from the log model
+  add_predictions(mortgage_3pred_model, 
+                  type = "response") %>% 
+  mutate(predicted_accepted = pred >= 0.6)
+
+head(mortgage_data_with_3pred)
+
+conf_mat <- mortgage_data_with_3pred %>% 
+  tabyl(accepted, predicted_accepted) %>% 
+  adorn_title()
+
+```
+
+De-mystify (hopefully) the confusion matrix output
+
+You will always have: times your model was correct - FALSE/FALSE and TRUE/TRUE (679 + 179)
+and the times it was wrong at FALSE/TRUE and TRUE/FALSE (93 + 49)
+
+What would the confusion matrix of a perfect classifier look like?
+
+- 0s in the "incorrect" diagonal (T/F and F/T)
+
+TN - True Negative - people didn't get a mortgage, model predicts no mortgage
+TP - True Positive - people did get a mortgage, model predicts mortgage
+FN - False Negative - people did get a mortgage, model predicts no mortgage
+FP - False Positive - people didn't get a mortgage, model predicts mortgage
+
+Task - 5 mins
+Extract the rows in mortgage_data with tu_score = 594. Compare the sample data outcomes with the predicted outcomes of the threshold 0.6 classifier and say which of the following four groups each outcome belongs to: (i) true positive, (ii) true negative, (iii) false positive or (iv) false negative.
+
+```{r}
+
+mortgage_data_with_3pred %>% 
+  filter(tu_score == 594)
+
+# First two rows = FALSE POSITIVE
+# Last 3 rows = TRUE POSITIVE
+```
+
+What measures of accuracy do we have? (How do we boil this down into a single value of accuracy?)
+
+Accuracy = nTP + nTN / N
+
+(times we were right) / (nrows)
+
+
+```{r}
+
+mortgage_data_with_3pred %>% 
+  summarise(accuracy = sum(accepted == predicted_accepted)/n())
+
+# 85.8% accuracy
+
+```
+
+We were correct in our predictions about 85% of the time.
+
+The bad news is that accuracy has a subtle weakness.
+
+Consider this case:
+
+we run a test at the end of the school year for 1,000 students/
+900 students pass the test
+100 students do not pass
+
+What accuracy would my "always pass" model get?
+
+900   100
+0     0
+
+The subtle weakness of accuracy then, is it's reaction to unbalanced data.
+
+This is why we've got other performance measures
+
+- Accuracy
+- Rates (True Positive Rate, Specificity, ...)
+- AUC  } next lesson
+- Gini }
+
+
+
+True negative rate
+- What it is? 
+Rate of correctly indicates the absence of a condition or characteristic, number of true negatives divided by the number of negatives.
+The proportion of negative predictions which are correct.
+
+- How to calculate?
+TNR = TN / N = TN / (TN + FP) = 1 - FPR
+- Any other names for it? (Specificity, selectivity)
+
+
+```{r}
+
+# calculate true negative rate for mortgage data
+mortgage_data_with_3pred %>% 
+  filter(!predicted_accepted) %>% 
+  summarise(TN = sum(accepted == predicted_accepted),
+            N = n()) %>% 
+  summarise(TNR = TN / N)
+
+```
+
+```{r}
+
+conf_mat
+
+nTN = 679
+nFP = 49
+nFN = 93
+nTP = 179
+
+true_positive_rate = nTP / (nTP + nFN)
+true_positive_rate
+
+true_negative_rate = nTN / (nTN + nFN)
+true_negative_rate
+
+false_positive_rate = nFP / (nFP + nTN)
+false_positive_rate
+
+false_negative_rate = nFN / (nFN + nTP)
+false_negative_rate
+
+```
+
+- the things / (the total number of items in that row)
+
+Which should we prioritise?
+
+no one answer to this, I'm afraid
+
+A loan-giving based might not mind as many false positives (people being given loans that shouldn't if it means they still give lots of loans to people they should)
+
+But a disease-testing company might care a lot about false positives
+
+we're going to see
+
+TPR and FPR again.

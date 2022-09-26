@@ -1,0 +1,473 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(tidytext)
+library(janeaustenr)
+library(textdata)
+
+```
+
+## Learning Objectives
+
+- Know how to convert from text data to _tokenised_ text data using 'unnest_tokens'
+- Understand how text data can be cleaned
+
+## NLP - Natural Language Processing
+
+```{r}
+
+phrases <- c(
+  "Here is some text.",
+  "Again, more text!",
+  "TEXT is Text?"
+)
+
+phrases
+
+```
+
+```{r}
+
+example_text <- tibble(phrase = phrases,
+       id = 1:3)
+
+```
+
+### Capitilisation and Punctuation
+'unnest_tokens()'
+
+```{r}
+
+word_df <- example_text %>% 
+  unnest_tokens(word, phrase, to_lower = FALSE)
+
+word_df %>% 
+  count(word, sort = TRUE)
+
+```
+
+```{r}
+
+lines <- 
+c(
+  "Whose woods these are I think I know.",
+  "His house is in the village though;", 
+  "He will not see me stopping here",
+  "To watch his woods fill up with snow."
+)
+
+lines_tibble <- tibble(lines = lines,
+                       line_no = 1:4)
+
+lines_tibble
+
+unnested_lines <- lines_tibble %>% 
+  unnest_tokens(word, lines)
+
+unnested_lines %>% 
+  count(word, sort = TRUE) %>% 
+  filter(n > 1)
+
+```
+
+
+```{r}
+# pull out punctuation too.
+example_text %>% 
+  unnest_tokens(word, phrase, strip_punct = FALSE)
+
+
+```
+
+### Stop words
+
+```{r}
+
+pride_book <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+  ) %>% 
+  unnest_tokens(word, text)
+
+pride_book %>% 
+  count(word, sort = TRUE)
+
+n_distinct(stop_words$lexicon)
+stop_words
+
+```
+
+```{r}
+
+pride_book %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = TRUE)
+
+```
+
+```{r}
+
+stop_words %>% 
+  count(lexicon, sort = TRUE)
+
+stop_words %>% 
+  filter(lexicon == "snowball")
+
+```
+
+```{r}
+
+pride_book %>% 
+  anti_join(filter(stop_words, lexicon == "snowball")) %>% 
+  count(word, sort= TRUE)
+
+```
+
+Task - Find the most common words, not including stop words in the book "Sense and Sensibility"
+
+```{r}
+
+sense_book <- tibble(line = sensesensibility)
+
+sense_book %>% 
+  unnest_tokens(word, line) %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = TRUE)
+
+```
+
+
+# TF-IDF and n-grams
+
+TF-IDF
+- term frequency -- inverse document frequency
+
+```{r}
+
+sentences <- c(
+  "This is a sentence about cats.",
+  "This is a sentence about dogs.",
+  "This is a sentence about alligators."
+)
+
+```
+
+```{r}
+
+sentences_df <- tibble(
+  sentence = sentences,
+  id = 1:3
+) %>% 
+  unnest_tokens(word, sentence)
+
+sentences_df
+
+```
+
+```{r}
+
+sentences_df %>% 
+  count(word, id, sort = TRUE)
+
+```
+
+TF-IDF = TF x log(1/DF)
+
+TF (term frequency) = N times a term appears in a document / N terms in document
+
+DF (document frequency) = N document a term appears in / N documents
+
+IDF = log(1/DF)
+
+```{r}
+
+sentences_df %>% 
+  count(word, id) %>% 
+  bind_tf_idf(term = word, document = id, n = n)
+
+```
+
+TF_IDF score is highest for words that are unique to each sentence. Words which appear in every sentence have a td-idf score of zero.
+
+
+```{r}
+
+titles <- c("Pride and Prejudice", "Sense and Sensibility", "Emma", "Persuasion", "Mansfield Park", "Northanger Abbey")
+
+books <- list(prideprejudice, sensesensibility, emma, persuasion, mansfieldpark,  northangerabbey)
+
+```
+
+```{r}
+
+str(books)
+
+books <- purrr::map_chr(books, paste, collapse = " ")
+
+```
+
+```{r}
+
+str(books)
+
+```
+
+
+```{r}
+
+all_books_df <- tibble(
+  title = titles,
+  text = books
+) %>% 
+  unnest_tokens(word, text)
+
+```
+
+```{r}
+
+allbook_df_tf_idf <- all_books_df %>% 
+  count(word, title) %>% 
+  bind_tf_idf(word, title, n) %>% 
+  arrange(desc(tf_idf))
+
+allbook_df_tf_idf
+
+```
+
+```{r}
+
+allbook_df_tf_idf %>% 
+  group_by(title) %>% 
+  slice_max(tf_idf, n = 5, with_ties = FALSE)
+
+```
+
+### N-grams
+
+sequence of n-consecutive words
+
+```{r}
+
+phrases <- c(
+  "here is some text",
+  "again more text",
+  "text is text"
+)
+
+phrases_df <- tibble(
+  phrase = phrases,
+  id     = 1:3
+) %>%
+  unnest_tokens(bigram, phrase, token = "ngrams", n = 2)
+
+phrases_df
+
+```
+For pride and prejudice find the top bigrams and trigrams:
+
+```{r}
+
+pride_book_bigrams <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+) %>% 
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>% 
+  filter(!is.na(bigram))
+
+pride_book_bigrams
+
+# "of the"
+
+pride_book_trigrams <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+) %>% 
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) %>% 
+  count(trigram, sort = TRUE) %>% 
+  filter(!is.na(trigram))
+
+pride_book_trigrams
+# "i do not"
+
+```
+
+```{r}
+# token = "characters"
+pride_book_characters <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+) %>% 
+  unnest_tokens(trigram, text, token = "characters") %>% 
+  count(trigram, sort = TRUE) %>% 
+  filter(!is.na(trigram))
+
+pride_book_characters
+# "e" is the most common letter used in the book
+
+```
+
+```{r}
+
+#sentences
+
+pride_book_sentences <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+) %>% 
+  unnest_tokens(trigram, text, token = "sentences") %>% 
+  count(trigram, sort = TRUE) %>% 
+  filter(!is.na(trigram))
+
+pride_book_sentences
+# "e" is the most common letter used in the book
+
+```
+
+### 'separate()'
+
+```{r}
+
+pride_book <- tibble(
+  id = 1:length(prideprejudice),
+  text = prideprejudice
+)
+
+book_bigram <- pride_book %>% 
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>% 
+  anti_join(stop_words, by = c("word1" = "word")) %>% 
+  anti_join(stop_words, by = c("word2" = "word"))
+
+book_bigram %>% 
+  unite(bigram, word1, word2, remove = FALSE, sep = " ")
+
+
+```
+
+```{r}
+
+emma_book <- tibble(
+  id = 1:length(emma),
+  text = emma
+  )
+
+emma_book_bigram <- emma_book %>%  
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  drop_na() %>% 
+  count(bigram, sort = TRUE) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>% 
+  # remove stop words
+  anti_join(stop_words, by = c("word1" = "word")) %>% 
+  anti_join(stop_words, by = c("word2" = "word")) %>% 
+  unite(bigram, word1, word2, remove = TRUE, sep = " ")
+
+emma_book_bigram
+
+```
+
+## Sentiment Analysis
+
+### Learning objectives
+
+- Understand what _sentiment analysis_ is
+- Know about the different sentiment _lexicons_ available
+- Be able to find the sentiment of words and _do analysis_ using those sentiments
+
+```{r}
+
+get_sentiments("afinn")
+
+
+get_sentiments("bing") %>% 
+  count(sentiment)
+
+
+get_sentiments("loughran") %>% 
+  count(sentiment)
+
+get_sentiments("nrc") %>% 
+  count(sentiment)
+
+```
+
+```{r}
+
+bing <- get_sentiments("bing")
+
+
+pride_book <- pride_book %>% 
+  unnest_tokens(word, text, token = "words") %>% 
+  anti_join(stop_words) 
+
+```
+
+```{r}
+
+book_sentiments <- pride_book %>% 
+  inner_join(bing)
+
+book_sentiments %>% 
+  count(sentiment, sort = TRUE)
+
+book_sentiments %>% 
+  filter(sentiment == "positive" ) %>% 
+  count(word, sort = TRUE)
+
+book_sentiments %>% 
+  filter(sentiment == "negative" ) %>% 
+  count(word, sort = TRUE)
+
+```
+
+Find the most positive, negative and neutral words in the book "Emma". Use the loughran sentiment lexicon.
+
+```{r}
+
+loughran <- get_sentiments("loughran")
+
+emma_book %>% 
+  unnest_tokens(word, text, token = "words") %>% 
+  anti_join(stop_words) %>% 
+  left_join(loughran) %>% 
+  count(sentiment, word) %>% 
+  group_by(sentiment) %>% 
+  slice_max(n) %>% 
+  filter(sentiment %in% c("positive", "negative", NA))
+
+```
+
+# average sentiment per sentence
+
+```{r}
+afinn <- get_sentiments("afinn")
+
+book_sentiments <- pride_book %>% 
+  inner_join(afinn)
+
+```
+
+```{r}
+
+sentence_sentiments <- book_sentiments %>% 
+  group_by(id) %>% 
+  summarise(mean_sentiment = mean(value))
+
+sentence_sentiments
+
+```
+
+```{r}
+
+ggplot(sentence_sentiments, aes(id, mean_sentiment)) +
+  #geom_point(alpha = 0.1) +
+  geom_smooth(se = FALSE)
+
+```
+

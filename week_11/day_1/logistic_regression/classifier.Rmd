@@ -1,0 +1,268 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(janitor)
+library(modelr)
+
+```
+
+```{r}
+# read and explore data
+mortgage_data <- read_csv("data/mortgage_applications.csv") %>% 
+  clean_names()
+
+# built a logistic regression model
+mortgage_glm <- glm(
+  accepted ~ tu_score + employed + age,
+  family = binomial(link = "logit"),
+  data = mortgage_data
+)
+
+# we used our model as a binary classifier (should we accept applicants for a mortgage?)
+mortgage_data_pred <- mortgage_data %>% 
+  add_predictions(mortgage_glm, type = "response")
+
+# each row is used to predict whether or not that person will be accepted for a mortgage
+head(mortgage_data_pred)
+
+```
+
+Recap of terms:
+
+The true positive rate: Portion of actual positive cases that are correctly identified by the classifier - prop of accepted mortgages, predicted correctly
+
+TPR = nTP / (nTP + nFN)
+
+The false positive rate: false alarms, the proportion of actual negative cases that are misclassified
+
+FPR = nFP / (nFP + nTN)
+
+Wouldn't it be good if we could visualise the effectiveness of our classifier?
+
+effectiveness here is meaning TPR vs FPR
+
+well there is: ROC (Receiver Operator Characteristi) curves
+
+Is the beep meaning there's an enemy plane, or is it just noise (e.g. some birds)
+
+```{r}
+
+library(pROC)
+
+roc_obj_3_terms <- mortgage_data_pred %>% 
+  roc(response = accepted, predictor = pred)
+
+ggroc(data = roc_obj_3_terms, legacy.axes = TRUE) +
+  labs(x = "False Positive Rate",
+       y = "True Positive Rate")
+
+```
+
+Task - 2 mins Look at the figure above and try to answer the following questions:
+Why are classifiers with ROC curves closer to the top-left corner said to be more effective?
+- High TPR and low FPR, i.e. better at detecting true positives with low levels of false positives
+
+Which end of the curves corresponds to low threshold probability, and which to high?
+- low threshold at top right and high threshold at bottom left.
+
+
+Ways to remember, as we decrease the threshold at which we classify, we increase the rate of false positives(of incorrectly accepting people for loans)
+
+
+```{r}
+
+tibble(
+  threshold = roc_obj_3_terms$thresholds,
+  true_positive_rate = roc_obj_3_terms$sensitivities,
+  false_positive_rate = roc_obj_3_terms$specificities
+)
+
+```
+
+Task - 10 mins
+OK, let’s fit another classifier and add its curve to the ROC plot from earlier!
+
+Fit a single predictor logistic regression model to the mortgage_data. We recommend tu_score as the predictor. Save the model as mortgage_1pred_model
+
+Add the predicted probabilities from this model to mortgage_data, and save the resulting data as mortgage_data_with_1pred
+
+Use this data to generate an an object from roc(), save the object as roc_obj_1pred
+
+Pass your old roc_obj_3pred and new roc_obj_1pred into ggroc() [Hint check the ggroc() docs to see how to pass in multiple roc objects].
+
+Given these ROC curves, which classifier is better?
+
+If you have time, try another single predictor, i.e. age or employed
+
+```{r}
+
+mortgage_glm_1pred <- glm(
+  accepted ~ tu_score ,
+  family = binomial(link = "logit"),
+  data = mortgage_data
+)
+
+
+mortgage_data_with_1pred <- mortgage_data %>% 
+  add_predictions(mortgage_glm_1pred, type = "response")
+
+roc_obj_1pred <- mortgage_data_with_1pred %>% 
+  roc(response = accepted, predictor = pred)
+
+ggroc(data = list("3 terms" = roc_obj_3_terms, "1 term" = roc_obj_1pred), legacy.axes = TRUE) +
+  labs(x = "False Positive Rate",
+       y = "True Positive Rate")
+
+```
+
+Which is the better model?
+
+It's pretty close but based on what we know about ROC curves and wanting to be near the top left, we like the three-term model.
+
+"better"
+
+What about giving a value to how good of a predictor our model is?
+
+- AUC (area under curve)
+ROC curves closer to (0,1) (top left) will have a larger space under the line
+
+Number between 0 and 1
+
+0.5 = 50/50 classifier - we're as good at making predictions as not
+
+so usually our operating range for AUC is between 0.5 and 1.
+
+```{r}
+
+auc(roc_obj_3_terms)
+
+```
+
+Area under the curve: 0.8881
+
+
+```{r}
+
+auc(roc_obj_1pred)
+
+```
+
+Area under the curve: 0.8666
+
+Based on AUC, we get a higher value for our model with 3 terms.
+
+AUC - the are under the ROC curve, goes up to 1, higher is better, 0.5 = crappy classifier. A single number value to express how good of a classifier your model is.
+
+- Gini
+
+A single number value to express how good of a classifier your model is.
+
+Gini = 2 AUC - 1
+
+Gini will be between -1 and 1 (higher is better)
+0 is a crappy classifier.
+
+```{r}
+
+gini3 = 2*auc(roc_obj_3_terms) - 1
+gini3
+
+```
+
+```{r}
+
+gini1 = 2*auc(roc_obj_1pred) - 1
+gini1
+
+```
+
+Comparing Models
+
+## Cross Validation
+
+- splitting data before building a model into test and train
+
+model is trained on training data
+model is tested on testing data
+
+5-fold cross-validation
+
+split our data into fifths
+
+taking each fifth as testing, train the model with the remaining (4/5ths)
+
+```{r}
+
+library(caret)
+
+```
+
+```{r}
+
+mortgage_data <- mortgage_data %>%
+  mutate(employed = as_factor(if_else(employed, "t", "f")),
+         accepted = as_factor(if_else(accepted, "t", "f")),
+         employed = relevel(employed, ref = "f"),
+         accepted = relevel(accepted, ref = "f")) 
+
+```
+
+```{r}
+
+train_control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 100,
+  savePredictions = TRUE,
+  classProbs = TRUE,
+  # retain performance stats for binary classifier (AUC, TPR, FPR)
+  summaryFunction = twoClassSummary
+)
+
+```
+
+```{r}
+# train each fold using our three term logistic model
+val_model <- train(
+  accepted ~ tu_score + employed + age,
+  family = binomial(link = "logit"),
+  method = "glm",
+  data = mortgage_data,
+  trControl = train_control
+)
+
+```
+
+```{r}
+
+summary(val_model)
+
+```
+
+```{r}
+
+val_model$results
+
+```
+
+Sens = Sensitivity (TPR)
+Spec = Specificity (FPR)
+ROC = Area under ROC curve
+
+For our validated model
+
+0.886 AUC
+
+0.5 AUC (as good as flipping a coin)
+1 AUC ( a perfectly predicting model)
+the closer to 1, the more better the model is at classifying unto binary groups
+
+
+
+
+
